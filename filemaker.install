@@ -1,0 +1,188 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Schema for FileMaker module.
+ */
+
+/**
+ * Implementation of hook_install().
+ */
+function filemaker_install() {
+  drupal_install_schema('filemaker');
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function filemaker_uninstall() {
+  drupal_uninstall_schema('filemaker');
+}
+
+/**
+ * Implementation of hook_schema().
+ */
+function filemaker_schema() {
+
+  $schema['filemaker'] = array(
+    'description' => t("Node type that can interact with a FileMaker layout."),
+    'fields' => array(
+      'nid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => t("The FileMaker node's {fmwebform}.nid"),
+      ),
+      'vid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => t("The FileMaker node's {node_revisions}.vid"),
+      ),
+      'fmcid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => t("The FileMaker connection's {filemaker_connection}.fmcid"),
+      ),
+      'layout' => array(
+        'type' => 'text',
+        'not null' => TRUE,
+        'description' => t("The name of the FileMaker layout that this webform will interact with."),
+      ),
+    ),
+    'primary key' => array('nid', 'vid'),
+    'unique keys' => array(
+      'vid' => array('vid')
+    ),
+    'indexes' => array(
+      'nid' => array('nid')
+    ),
+  );
+
+  $schema['filemaker_connection'] = array(
+    'description' => t('Stores information to connect to a FileMaker database.'),
+    'fields' => array(
+      'fmcid' => array(
+        'description' => t('Unique auto incrementing id.'),
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'fmhostname' => array(
+        'description' => t('FileMaker host name.'),
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => FALSE,
+      ),
+      'fmdatabase' => array(
+        'description' => t('FileMaker database name.'),
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => FALSE,
+      ),
+      'fmusername' => array(
+        'description' => t('FileMaker username.'),
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => FALSE,
+      ),
+      'fmpassword' => array(
+        'description' => t('FileMaker password.'),
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => FALSE,
+      ),
+    ),
+    'primary key' => array('fmcid'),
+  );
+
+  $schema['filemaker_field'] = array(
+    'description' => t('An instance of a FileMaker field. Attaches to a FileMaker webform node.'),
+    'fields' => array(
+      'fmfid' => array(
+        'description' => t('Unique auto incrementing id.'),
+        'type' => 'serial',
+        'not null' => TRUE,
+      ),
+      'nid' => array(
+        'description' => t("The {filemaker}.nid"),
+        'type' => 'int',
+        'not null' => FALSE,
+      ),
+      'name' => array(
+        'description' => t("The FileMaker field's name"),
+        'type' => 'varchar',
+        'length' => '128',
+        'not null' => FALSE,
+      ),
+      'label' => array(
+        'description' => t("The FileMaker field's label"),
+        'type' => 'text',
+        'not null' => FALSE,
+      ),
+      'weight' => array(
+        'description' => t("The FileMaker field's weight; used to determine sort order"),
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'type' => array(
+        'description' => t('FileMaker field type, not MySQL or widget type.'),
+        'type' => 'varchar',
+        'length' => '20',
+        'not null' => FALSE,
+      ),
+      'widget' => array(
+        'description' => t('Name of widget to use on webform. Used for the #type variable in the field array.'),
+        'type' => 'varchar',
+        'length' => '20',
+        'not null' => FALSE,
+      ),
+      'default_value' => array(
+        'description' => t('Default value for the field.'),
+        'type' => 'text',
+        'not null' => FALSE,
+      ),
+    ),
+    'primary key' => array('fmfid'),
+  );
+    
+  $schema['filemaker_portal'] = array(
+    'description' => t('An instance of a FileMaker portal to appear on a FileMaker node'),
+    'fields' => array(
+      'fmpid' => array(
+        'description' => t('Unique auto incrementing id.'),
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'nid' => array(
+        'description' => t('The {filemaker}.nid'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'name' => array(
+        'description' => t('The name of the portal, as saved in FileMaker.'),
+        'type' => 'varchar',
+        'length' => '100',
+        'not null' => TRUE,
+      ),
+      'weight' => array(
+        'description' => t('The weight is used to determine sort order.'),
+        'type' => 'int',
+        'not null' => FALSE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('fmpid'),
+  );
+
+  return $schema;
+}
+
