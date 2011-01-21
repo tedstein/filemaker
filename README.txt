@@ -16,7 +16,7 @@ Place the FileMaker API in the filemakerapi folder.
 The files you added should look like this:
 
 sites/all/libraries/filemakerapi/FileMaker/
-sites/all/modules/filemakerapi/FileMaker.php
+sites/all/libraries/filemakerapi/FileMaker.php
 
 Once the FileMaker API is copied into the module directory structure (as shown above), enable the module.
 
