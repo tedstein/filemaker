@@ -7,6 +7,28 @@
  */
 
 /**
+ * Implmentation of hook_requirements().
+ */
+function filemaker_requirements($phase) {
+  if ($phase == "runtime") {
+    filemaker_load_api();
+    $requirements['filemaker']['title'] = t('FileMaker');
+    if (class_exists('FileMaker')) {
+      $requirements['filemaker']['value'] = 'FileMaker API is installed correctly';
+      $requirements['filemaker']['severity'] = REQUIREMENT_OK;
+    }
+    else {
+      // Required API wasn't found.
+      $requirements['filemaker']['value'] = t('FileMaker API was not found');
+      // Provide instructions on installing the FileMaker API for PHP.
+      $requirements['filemaker']['description'] = t('The FileMaker API for PHP is required for this module. The API comes with your copy of FileMaker server and should be placed in sites/all/libraries.');
+      $requirements['filemaker']['severity'] = REQUIREMENT_ERROR;
+    }
+  } // done if phase = runtime
+  return $requirements;
+}
+
+/**
  * Implementation of hook_install().
  */
 function filemaker_install() {

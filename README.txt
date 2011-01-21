@@ -8,22 +8,15 @@ FileMaker API for PHP (which came with your copy of FileMaker server)
 
 Directory structure for the FileMaker API for PHP:
 
-Place the primary API directory (FileMaker) in the filemaker module folder.
-Place the gateway file (FileMaker.php) in the filemaker module folder.
+Create a directory in sites/all/libraries named filemakerapi.
+
+Place the FileMaker API in the filemakerapi folder.
+
 
 The files you added should look like this:
 
-sites/all/modules/filemaker/FileMaker/
-sites/all/modules/filemaker/FileMaker.php
-
-Including the files from this module, it should look like this:
-
-sites/all/modules/filemaker/filemaker.info
-sites/all/modules/filemaker/filemaker.module
-sites/all/modules/filemaker/filemaker.install
-sites/all/modules/filemaker/filemaker.admin.inc
-sites/all/modules/filemaker/FileMaker/              // FileMaker API for PHP
-sites/all/modules/filemaker/FileMaker.php           // FileMaker API for PHP
+sites/all/libraries/filemakerapi/FileMaker/
+sites/all/modules/filemakerapi/FileMaker.php
 
 Once the FileMaker API is copied into the module directory structure (as shown above), enable the module.
 
