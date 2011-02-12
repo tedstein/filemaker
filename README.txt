@@ -12,13 +12,12 @@ Create a directory in sites/all/libraries named filemakerapi.
 
 Place the FileMaker API in the filemakerapi folder.
 
-
 The files you added should look like this:
 
 sites/all/libraries/filemakerapi/FileMaker/
 sites/all/libraries/filemakerapi/FileMaker.php
 
-Once the FileMaker API is copied into the module directory structure (as shown above), enable the module.
+Once the FileMaker API is copied into 'sites/all/libraries' directory structure (as shown above), enable the module.
 
 Set permissions. Unless you are user #1, you will not be able to access the FileMaker tabs.
 

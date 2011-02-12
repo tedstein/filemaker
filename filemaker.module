@@ -1422,7 +1422,6 @@ function filemaker_filemaker_object($fmcid) {
 
   // This is the single point of entry to the FileMaker API for PHP.
   filemaker_load_api(); 
-  // require_once('FileMaker.php');
 
   // Select the authentication information from the Drupal database.
   $fmc_sql = "SELECT * FROM {filemaker_connection} WHERE fmcid = %d";
@@ -1434,8 +1433,6 @@ function filemaker_filemaker_object($fmcid) {
   return $fm;
 }
 
-
-
 /**
  * Loads FileMaker API if it's not loaded already.
  *
@@ -1445,7 +1442,7 @@ function filemaker_filemaker_object($fmcid) {
 function filemaker_load_api() {
 
   if (!class_exists('FileMaker')) {
-    // try using libraries module.
+    // Try using libraries module.
     if (module_exists('libraries')) {
       $libraries_path= drupal_get_path('module', 'libraries');
       $libraries_include = $libraries_path . '/' . 'libraries.module';
@@ -1453,7 +1450,7 @@ function filemaker_load_api() {
       include_once($libraries_include);
 
       // Let's see if the FileMaker API is really available from libraries.
-      $filemaker_api = './'. libraries_get_path('filemakerapi') .'/FileMaker.php';
+      $filemaker_api = './' . libraries_get_path('filemakerapi') . '/FileMaker.php';
       if (file_exists($filemaker_api)) {
         include_once $filemaker_api;
       }
@@ -1462,14 +1459,6 @@ function filemaker_load_api() {
   // Tell the caller if the FileMaker class exists.
   return class_exists('FileMaker');
 }
-
-
-
-
-
-
-
-
 
 /**
  * Formats a Drupal date for FileMaker.
