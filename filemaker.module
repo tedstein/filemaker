@@ -110,6 +110,18 @@ function filemaker_perm() {
   return array('administer filemaker', 'create mode', 'browse and find mode', 'layout mode', 'FileMaker nodes');
 }
 
+
+
+
+
+/*************************************************************
+ * Node hooks
+ *************************************************************/
+
+
+
+
+
 /**
  * Implementation of hook_node_info().
  */
@@ -127,6 +139,9 @@ function filemaker_node_info() {
   );
 }
 
+
+
+
 /**
  * Implementation of hook_view().
  */
@@ -137,6 +152,9 @@ function filemaker_view($node, $teaser = FALSE, $page = FALSE) {
 
   return $node;
 }
+
+
+
 
 /**
  * Implementation of hook_form().
@@ -203,6 +221,9 @@ function filemaker_form($node) {
   return $form;
 }
 
+
+
+
 /**
  * Validates filemaker_form.
  */
@@ -215,6 +236,9 @@ function filemaker_validate(&$form, &$form_state) {
   }
 }
 
+
+
+
 /**
  * Implementation of hook_load().
  */
@@ -222,12 +246,18 @@ function filemaker_load($node) {
   return db_fetch_object(db_query('SELECT fmcid, layout FROM {filemaker} WHERE vid = %d', $node->vid));
 }
 
+
+
+
 /**
  * Implementation of hook_insert().
  */
 function filemaker_insert($node) {
   db_query("INSERT INTO {filemaker} (nid, vid, fmcid, layout) VALUES (%d, %d, %d, '%s')", $node->nid, $node->vid, $node->fmcid, $node->layout);
 }
+
+
+
 
 /**
  * Implementation of hook_delete().
@@ -237,6 +267,9 @@ function filemaker_delete($node) {
   db_query("DELETE FROM {filemaker_field} WHERE nid = %d", $node->nid);
   db_query("DELETE FROM {filemaker_portal} WHERE nid = %d", $node->nid);
 }
+
+
+
 
 /**
  * Implementation of hook_update().
@@ -249,6 +282,9 @@ function filemaker_update($node) {
     db_query("UPDATE {filemaker} SET fmcid = %d, layout = '%s' WHERE vid = %d", $node->fmcid, $node->layout, $node->vid);
   }
 }
+
+
+
 
 /**
  * Implementation of hook_access().
@@ -263,6 +299,17 @@ function filemaker_access($op, $node, $account) {
       return user_access('FileMaker nodes', $account);
   }
 }
+
+
+
+
+/*************************************************************
+ * Page callbacks
+ *************************************************************/
+
+
+
+
 
 /**
  * Page callback for the 'Layout Mode' tab on a filemaker node.
@@ -288,6 +335,9 @@ function filemaker_layout_tab() {
   return $output;
 }
 
+
+
+
 /**
  * Page callback for the 'Create Mode' tab on a filemaker node.
  *
@@ -297,6 +347,9 @@ function filemaker_create_tab() {
 
   return drupal_get_form('filemaker_record_form');
 }
+
+
+
 
 /**
  * Page callback for the 'FileMaker portals' tab on a filemaker node.
@@ -339,6 +392,9 @@ function filemaker_portals_tab() {
 
   return $output;
 }
+
+
+
 
 /**
  * Page callback for the 'Browse Mode' tab on a filemaker node.
@@ -414,6 +470,9 @@ function filemaker_browse_tab() {
   return $output;
 }
 
+
+
+
 /**
  * Page callback for the find mode tab on a filemaker node.
  *
@@ -423,6 +482,9 @@ function filemaker_find_tab() {
 
   return drupal_get_form('filemaker_record_form');
 }
+
+
+
 
 /**
  * Page callback for the 'FileMaker fields' tab on a filemaker node.
@@ -464,6 +526,18 @@ function filemaker_fields_tab() {
 
   return $output;
 }
+
+
+
+
+
+/*************************************************************
+ * Forms
+ *************************************************************/
+
+
+
+
 
 /**
  * Callback for the filemaker_record_form.
@@ -552,6 +626,9 @@ function filemaker_record_form() {
   return $form;
 }
 
+
+
+
 /**
  * Submit function for filemaker_find_form.
  *
@@ -586,6 +663,9 @@ function filemaker_find_submit(&$form, &$form_state) {
 
   filemaker_perform_find($nid);
 }
+
+
+
 
 /**
  * Submit function for filemaker_browse_form.
@@ -630,6 +710,9 @@ function filemaker_browse_submit(&$form, &$form_state) {
   drupal_goto(arg(0) . '/' . arg(1) . '/' . arg(2));
 }
 
+
+
+
 /**
  * Submit function for filemaker_create_form.
  *
@@ -672,6 +755,9 @@ function filemaker_create_submit(&$form, &$form_state) {
     filemaker_perform_find($nid);
   }
 }
+
+
+
 
 /**
  * Form to choose layout for a filemaker node.
@@ -727,6 +813,9 @@ function filemaker_layout_form() {
   return $form;
 }
 
+
+
+
 /**
  * Submit handler for filemaker_layout_form.
  */
@@ -738,6 +827,9 @@ function filemaker_layout_submit(&$form, &$form_state) {
   $sql = "UPDATE {filemaker} SET layout = '%s' WHERE nid = %d";
   db_query($sql, $layout, $nid);
 }
+
+
+
 
 /**
  * Form to add portals to a FileMaker node.
@@ -804,6 +896,9 @@ function filemaker_portal_form() {
   }
 }
 
+
+
+
 /**
  * Submit handler for filemaker_portal_form.
  */
@@ -815,6 +910,9 @@ function filemaker_portal_submit(&$form, &$form_state) {
   $sql = "INSERT INTO {filemaker_portal} (fmpid, nid, name) VALUES (NULL, %d, '%s')";
   db_query($sql, $nid, $portal_name);
 }
+
+
+
 
 /**
  * Creates a form to update or insert a FileMaker field.
@@ -934,6 +1032,9 @@ function filemaker_field_form() {
   return $form;
 }
 
+
+
+
 /**
  * Submit function for the filemaker_field_form.
  *
@@ -979,93 +1080,16 @@ function filemaker_field_submit(&$form, &$form_state) {
   drupal_goto(arg(0) . '/' . arg(1) . '/' . arg(2) . '/' . arg(3));
 }
 
-/**
- * Form to add or edit a single FileMaker connection.
- */
-function filemaker_connection_form() {
 
-  $fmcid = arg(4);
 
-  // Record being inserted or updated?
-  if ($fmcid) {
-    $fmc_sql = "SELECT * FROM {filemaker_connection} WHERE fmcid = %d";
-    $fmc = db_fetch_object(db_query($fmc_sql, $fmcid));
-  }
 
-  $form = array();
+/*************************************************************
+ * Custom functions
+ *************************************************************/
 
-  // Insert validation, submit function names, and redirect location.
-  $form['#submit'][] = 'filemaker_connection_submit';
-  $form['#redirect'] = 'admin/settings/filemaker';
 
-  // Create connection fieldset.
-  $form['connection'] = array(
-    '#title' => t('FileMaker Connection'),
-    '#type' => 'fieldset',
-  );
 
-  // Hostname field.
-  $form['connection']['fmhostname'] = array(
-    '#title' => t('Host Name'),
-    '#type' => 'textfield',
-    '#default_value' => $fmc->fmhostname,
-  );
 
-  // Database field.
-  $form['connection']['fmdatabase'] = array(
-    '#title' => t('Database Name'),
-    '#type' => 'textfield',
-    '#default_value' => $fmc->fmdatabase,
-  );
-
-  // Username field.
-  $form['connection']['fmusername'] = array(
-    '#title' => t('Username'),
-    '#type' => 'textfield',
-    '#default_value' => $fmc->fmusername,
-  );
-
-  // Password field.
-  $form['connection']['fmpassword'] = array(
-    '#title' => t('Password'),
-    '#type' => 'textfield',
-    '#default_value' => $fmc->fmpassword,
-  );
-
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Save Connection'),
-  );
-
-  return $form;
-}
-
-/**
- * Submit handler for filemaker_connection_form.
- */
-function filemaker_connection_submit(&$form, &$form_state) {
-
-  $fmcid = arg(4);
-
-  $fmhostname = $form_state['values']['fmhostname'];
-  $fmdatabase = $form_state['values']['fmdatabase'];
-  $fmusername = $form_state['values']['fmusername'];
-  $fmpassword = $form_state['values']['fmpassword'];
-
-  // Update connection?
-  if ($fmcid) {
-    $sql = "UPDATE {filemaker_connection} SET fmhostname = '%s', fmdatabase = '%s', fmusername = '%s', fmpassword = '%s' WHERE fmcid = '%d'";
-    db_query($sql, $fmhostname, $fmdatabase, $fmusername, $fmpassword, $fmcid);
-    drupal_set_message(t('Connection updated.'));
-  }
-
-  // Insert connection.
-  else {
-    $sql = "INSERT INTO {filemaker_connection} (fmcid, fmhostname, fmdatabase, fmusername, fmpassword) VALUES (NULL, '%s', '%s', '%s', '%s')";
-    db_query($sql, $fmhostname, $fmdatabase, $fmusername, $fmpassword);
-    drupal_set_message(t('Connection Created.'));
-  }
-}
 
 /**
  * Creates a table with a list of all the portals that have been added to a node.
@@ -1087,6 +1111,10 @@ function filemaker_portals_table($nid) {
   return theme_table($head, $rows);
 }
 
+
+
+
+
 /**
  * Attaches all of the portals that have been added to a FileMaker node.
  */
@@ -1103,6 +1131,10 @@ function filemaker_get_portals($nid) {
 
   return $output;
 }
+
+
+
+
 
 /**
  * Returns a single portal to attach to a FileMaker node.
@@ -1161,6 +1193,11 @@ function filemaker_get_portal($nid, $portal_name) {
   return theme_table($head, $rows);
 }
 
+
+
+
+
+
 /**
  * Cleans up field names of related fields for display.
  *
@@ -1184,6 +1221,10 @@ function filemaker_format_field_name($field_name) {
 
   return $field_name;
 }
+
+
+
+
 
 /**
  * Receives an object created by the FileMaker API and checks to see if it is an error.
@@ -1234,6 +1275,10 @@ function filemaker_is_error($object) {
     return FALSE;
   }
 }
+
+
+
+
 
 /**
  * Returns a single field for a form array.
@@ -1288,6 +1333,10 @@ function filemaker_field_for_form_array($name, $label, $widget, $default_value, 
   return $field;
 }
 
+
+
+
+
 /**
  * Returns a themed HTML table of FileMaker fields added to this node.
  */
@@ -1322,6 +1371,10 @@ function filemaker_fields_tab_table($nid) {
     return '';
   }
 }
+
+
+
+
 
 /**
  * Performs a find in a FileMaker database.
@@ -1415,6 +1468,9 @@ function filemaker_perform_find($nid) {
 }
 
 
+
+
+
 /**
  * Create a FileMaker object.
  *
@@ -1441,6 +1497,10 @@ function filemaker_filemaker_object($fmcid) {
 
   return $fm;
 }
+
+
+
+
 
 /**
  * Loads FileMaker API if it's not loaded already.
@@ -1469,6 +1529,10 @@ function filemaker_load_api() {
   return class_exists('FileMaker');
 }
 
+
+
+
+
 /**
  * Checks node access for a tab.
  */
@@ -1485,6 +1549,10 @@ function filemaker_tab_access($permission) {
     return FALSE;
   }
 }
+
+
+
+
 
 /**
  * Prepares data to be written to FileMaker.
@@ -1504,6 +1572,10 @@ function filemaker_format_all($field, &$form_state, &$record) {
     // Update FileMaker Record object with value from form.
     $record->setField($field->name, $form_state['values'][$field->name]);
 }
+
+
+
+
 
 /**
  * Prepares data in Drupal checkboxes to be written to FileMaker.
@@ -1533,6 +1605,10 @@ function filemaker_format_checkboxes($form_state_value) {
   return implode("\r", $selected);
 }
 
+
+
+
+
 /**
  * Formats a Drupal date for FileMaker.
  */
@@ -1541,13 +1617,37 @@ function filemaker_format_date($date) {
   return $date['month'] . '/' . $date['day'] . '/' . $date['year'];
 }
 
+
+
+
+
+/*************************************************************
+ * Debugging assistance
+ *************************************************************/
+
+
+
+
+
+/**
+ *  Backtrace to see what the entire stack of functions that called this function. 
+ */
+function squash_called() {
+  $f = debug_backtrace();
+  ds($f[2]['function'] . '->' . $f[1]['function']);
+}
+
+
+
+
+
 /**
  * Debugging output made pretty.  Object-aware. 
  */
-function ds($v) {  
+function filemaker_ds($v) {  
   if(is_object($v)) {
-    drupal_set_message('<pre>' . print_r((array)$v,1) . '</pre>');
+    drupal_set_message('<pre>' . print_r((array) $v, 1) . '</pre>');
   } else {
-    drupal_set_message('<pre>' . print_r($v,1) . '</pre>');
+    drupal_set_message('<pre>' . print_r($v, 1) . '</pre>');
   }
 }
