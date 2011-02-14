@@ -76,6 +76,11 @@ function filemaker_schema() {
         'not null' => TRUE,
         'description' => t("The name of the FileMaker layout that this webform will interact with."),
       ),
+      'fmview' => array(
+        'type' => 'text',
+        'not null' => TRUE,
+        'description' => t("The FileMaker feature to include on the standard Drupal view."),
+      ),
     ),
     'primary key' => array('nid', 'vid'),
     'unique keys' => array(
@@ -207,4 +212,5 @@ function filemaker_schema() {
 
   return $schema;
 }
+
 

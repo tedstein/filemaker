@@ -150,6 +150,22 @@ function filemaker_view($node, $teaser = FALSE, $page = FALSE) {
   // Default view of node. All of the interesting stuff happens under the tabs attached to the node.
   $node = node_prepare($node, $teaser);
 
+  // Add selected FileMaker feature to Drupal's node view.
+
+  // Create mode.
+  if ($node->fmview == 'create_mode') {
+    $node->content['filemaker'] = array(
+      '#value' => drupal_get_form('filemaker_record_form'),
+    );
+  }
+
+  // Browse mode.
+  elseif ($node->fmview == 'browse_mode') {
+    $node->content['filemaker'] = array(
+      '#value' => filemaker_browse_tab(),
+    );
+  }
+
   return $node;
 }
 
@@ -201,7 +217,6 @@ function filemaker_form($node) {
       '#required' => TRUE,
       '#default_value' => isset($node->fmcid) ? $node->fmcid : '',
       '#weight' => 5,
-      '#maxlength' => 3,
     );
   }
 
@@ -217,6 +232,21 @@ function filemaker_form($node) {
       '#maxlength' => 3,
     );
   }
+
+  // FileMaker feature to use during normal Drupal node view.
+  $options = array(
+    'none' => 'none',
+    'create_mode' => 'create mode',
+    'browse_mode' => 'browse mode',
+  );
+  $form['fmview'] = array(
+    '#type' => 'select',
+    '#options' => $options,
+    '#title' => t('FileMaker feature to use for default Drupal view.'),
+    '#required' => TRUE,
+    '#default_value' => isset($node->fmview) ? $node->fmview : '',
+    '#weight' => 5,
+  );
 
   return $form;
 }
@@ -243,7 +273,7 @@ function filemaker_validate(&$form, &$form_state) {
  * Implementation of hook_load().
  */
 function filemaker_load($node) {
-  return db_fetch_object(db_query('SELECT fmcid, layout FROM {filemaker} WHERE vid = %d', $node->vid));
+  return db_fetch_object(db_query('SELECT fmcid, layout, fmview FROM {filemaker} WHERE vid = %d', $node->vid));
 }
 
 
@@ -253,7 +283,7 @@ function filemaker_load($node) {
  * Implementation of hook_insert().
  */
 function filemaker_insert($node) {
-  db_query("INSERT INTO {filemaker} (nid, vid, fmcid, layout) VALUES (%d, %d, %d, '%s')", $node->nid, $node->vid, $node->fmcid, $node->layout);
+  db_query("INSERT INTO {filemaker} (nid, vid, fmcid, layout, fmview) VALUES (%d, %d, %d, '%s', '%s')", $node->nid, $node->vid, $node->fmcid, $node->layout, $node->fmview);
 }
 
 
@@ -279,7 +309,7 @@ function filemaker_update($node) {
     filemaker_insert($node);
   }
   else {
-    db_query("UPDATE {filemaker} SET fmcid = %d, layout = '%s' WHERE vid = %d", $node->fmcid, $node->layout, $node->vid);
+    db_query("UPDATE {filemaker} SET fmcid = %d, layout = '%s', fmview = '%s' WHERE vid = %d", $node->fmcid, $node->layout, $node->fmview, $node->vid);
   }
 }
 
@@ -405,10 +435,16 @@ function filemaker_portals_tab() {
 function filemaker_browse_tab() {
 
   $nid = arg(1);
+  $tab = arg(2);
   $fmid = arg(3);
   $delete = arg(4);
 
   $node = node_load($nid);
+
+  // Normal Drupal node view. Need a found set.
+  if (empty($tab)) {
+    filemaker_default_find($node);
+  }
 
   // If there is a record to edit, either delete or get form and portals.
   if ($fmid) {
@@ -550,14 +586,18 @@ function filemaker_record_form() {
   $tab = arg(2);
   $fmid = arg(3);
 
-  // In case insert form is being shown on node view.
-  $tab = (empty($tab)) ? 'create' : $tab;
-
   $node = node_load($nid);
 
   $fm = filemaker_filemaker_object($node->fmcid);
 
   $form = array();
+
+  // Are we in normal Drupal node view (note a FileMaker tab)?
+  if (empty($tab)) {
+    if ($node->fmview == 'create_mode') {
+      $tab = 'create';
+    }
+  }
 
   if ($tab == 'create') {
     $fieldset_title = t('Create Mode');
@@ -662,6 +702,27 @@ function filemaker_find_submit(&$form, &$form_state) {
   $_SESSION['filemaker'][$nid]['foundset']['request'] = serialize($request);
 
   filemaker_perform_find($nid);
+}
+
+function filemaker_default_find($node) {
+
+  // Create FileMaker_Command_Find object.
+  $fm = filemaker_filemaker_object($node->fmcid);
+  $request = $fm->newFindCommand($node->layout);
+
+  // Get fields added to this FileMaker node.
+  $fields_sql = "SELECT name, label, widget, default_value FROM {filemaker_field} WHERE nid = %d ORDER BY weight, fmfid";
+  $fields_result = db_query($fields_sql, $node->nid);
+
+  // Loop through fields, setting each one.
+  while ($data = db_fetch_object($fields_result)) {
+    $request->addFindCriterion($data->name, $data->default_value);
+  }
+
+  // Store find request in session so that we can perform a new find to recreate the found set if record in it is edited or deleted.
+  $_SESSION['filemaker'][$node->nid]['foundset']['request'] = serialize($request);
+
+  filemaker_perform_find($node->nid);
 }
 
 
@@ -1079,6 +1140,103 @@ function filemaker_field_submit(&$form, &$form_state) {
 
   drupal_goto(arg(0) . '/' . arg(1) . '/' . arg(2) . '/' . arg(3));
 }
+
+
+
+
+/**
+ * Form to add or edit a single FileMaker connection.
+ */
+function filemaker_connection_form() {
+
+  $fmcid = arg(4);
+
+  // Record being inserted or updated?
+  if ($fmcid) {
+    $fmc_sql = "SELECT * FROM {filemaker_connection} WHERE fmcid = %d";
+    $fmc = db_fetch_object(db_query($fmc_sql, $fmcid));
+  }
+
+  $form = array();
+
+  // Insert validation, submit function names, and redirect location.
+  $form['#submit'][] = 'filemaker_connection_submit';
+  $form['#redirect'] = 'admin/settings/filemaker';
+
+  // Create connection fieldset.
+  $form['connection'] = array(
+    '#title' => t('FileMaker Connection'),
+    '#type' => 'fieldset',
+  );
+
+  // Hostname field.
+  $form['connection']['fmhostname'] = array(
+    '#title' => t('Host Name'),
+    '#type' => 'textfield',
+    '#default_value' => $fmc->fmhostname,
+  );
+
+  // Database field.
+  $form['connection']['fmdatabase'] = array(
+    '#title' => t('Database Name'),
+    '#type' => 'textfield',
+    '#default_value' => $fmc->fmdatabase,
+  );
+
+  // Username field.
+  $form['connection']['fmusername'] = array(
+    '#title' => t('Username'),
+    '#type' => 'textfield',
+    '#default_value' => $fmc->fmusername,
+  );
+
+  // Password field.
+  $form['connection']['fmpassword'] = array(
+    '#title' => t('Password'),
+    '#type' => 'textfield',
+    '#default_value' => $fmc->fmpassword,
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save Connection'),
+  );
+
+  return $form;
+}
+
+
+
+
+
+/**
+ * Submit handler for filemaker_connection_form.
+ */
+function filemaker_connection_submit(&$form, &$form_state) {
+
+  $fmcid = arg(4);
+
+  $fmhostname = $form_state['values']['fmhostname'];
+  $fmdatabase = $form_state['values']['fmdatabase'];
+  $fmusername = $form_state['values']['fmusername'];
+  $fmpassword = $form_state['values']['fmpassword'];
+
+  // Update connection?
+  if ($fmcid) {
+    $sql = "UPDATE {filemaker_connection} SET fmhostname = '%s', fmdatabase = '%s', fmusername = '%s', fmpassword = '%s' WHERE fmcid = '%d'";
+    db_query($sql, $fmhostname, $fmdatabase, $fmusername, $fmpassword, $fmcid);
+    drupal_set_message(t('Connection updated.'));
+  }
+
+  // Insert connection.
+  else {
+    $sql = "INSERT INTO {filemaker_connection} (fmcid, fmhostname, fmdatabase, fmusername, fmpassword) VALUES (NULL, '%s', '%s', '%s', '%s')";
+    db_query($sql, $fmhostname, $fmdatabase, $fmusername, $fmpassword);
+    drupal_set_message(t('Connection Created.'));
+  }
+}
+
+
 
 
 
@@ -1630,13 +1788,12 @@ function filemaker_format_date($date) {
 
 
 /**
- *  Backtrace to see what the entire stack of functions that called this function. 
+ *  More help with debugging 
  */
 function squash_called() {
   $f = debug_backtrace();
   ds($f[2]['function'] . '->' . $f[1]['function']);
 }
-
 
 
 
