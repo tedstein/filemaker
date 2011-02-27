@@ -117,6 +117,15 @@ function filemaker_perm() {
 
 
 
+
+/*************************************************************
+ * Custom hooks
+ *************************************************************/
+
+
+
+
+
 /**
  * Implementation of hook_hook_info().
  */
@@ -143,17 +152,46 @@ function filemaker_hook_info() {
  * Implementation of hook_filemaker().
  */
 function filemaker_filemaker($op, $node) {
+
+  // Collect the actions that we need to fire.
   $aids = _trigger_get_hook_aids('filemaker', $op);
+
   $context = array(
     'hook' => 'filemaker',
     'op' => $op,
     'node' => $node,
   );
-  // dsm($context);
+
   actions_do(array_keys($aids), $node, $context);
 }
 
 
+
+
+
+/**
+ * Implementation of hook_action_info_alter().
+ */
+function filemaker_action_info_alter(&$info) {
+
+  // Loop through each action.
+  foreach ($info as $type => $data) {
+
+    // Only add our trigger to node or system actions.
+    if (stripos($type, "node_") === 0 || stripos($type, "system_") === 0) {
+
+      // Don't remove any triggers that are already added to the approved list.
+      if (isset($info[$type]['hooks']['application'])) {
+        $info[$type]['hooks']['filemaker'] = array_merge($info[$type]['hooks']['filemaker'], array('create', 'update'));
+      }
+
+      // Add our trigger to the approved list of hooks.
+      else {
+        $info[$type]['hooks']['filemaker'] = array('create', 'update',);
+      }
+    }
+  }
+}
 
 
 
