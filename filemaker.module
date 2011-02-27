@@ -103,12 +103,56 @@ function filemaker_menu() {
   return $items;
 }
 
+
+
+
+
 /**
  * Implementation of hook_perm().
  */
 function filemaker_perm() {
   return array('administer filemaker', 'create mode', 'browse and find mode', 'layout mode', 'FileMaker nodes');
 }
+
+
+
+
+/**
+ * Implementation of hook_hook_info().
+ */
+function filemaker_hook_info() {
+  return array(
+    'filemaker' => array(
+      'filemaker' => array(
+        'create' => array(
+          'runs when' => t('After creating a FileMaker record'),
+        ),
+        'update' => array(
+          'runs when' => t('After updating a FileMaker record'),
+        ),
+      ),
+    ),
+  );
+}
+
+
+
+
+
+/**
+ * Implementation of hook_filemaker().
+ */
+function filemaker_filemaker($op, $node) {
+  $aids = _trigger_get_hook_aids('filemaker', $op);
+  $context = array(
+    'hook' => 'filemaker',
+    'op' => $op,
+    'node' => $node,
+  );
+  // dsm($context);
+  actions_do(array_keys($aids), $node, $context);
+}
+
 
 
 
@@ -156,6 +200,7 @@ function filemaker_view($node, $teaser = FALSE, $page = FALSE) {
   if ($node->fmview == 'create_mode') {
     $node->content['filemaker'] = array(
       '#value' => drupal_get_form('filemaker_record_form'),
+      '#weight' => 10,
     );
   }
 
@@ -163,6 +208,7 @@ function filemaker_view($node, $teaser = FALSE, $page = FALSE) {
   elseif ($node->fmview == 'browse_mode') {
     $node->content['filemaker'] = array(
       '#value' => filemaker_browse_tab(),
+      '#weight' => 10,
     );
   }
 
@@ -811,10 +857,14 @@ function filemaker_create_submit(&$form, &$form_state) {
   if (!filemaker_is_error($result)) {
 
     drupal_set_message(t('Record saved to FileMaker.'));
+
+    // Fire off the hook.
+    module_invoke_all('filemaker', 'create', $node);
     
     // If record saved, update found set so new record is included.
     filemaker_perform_find($nid);
   }
+
 }
 
 
