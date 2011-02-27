@@ -564,7 +564,11 @@ function filemaker_browse_tab() {
 
     // Delete?
     if ($delete == 'delete') {
+
       filemaker_delete_record($node, $fmid);
+
+      // Reload this tab with new found set.
+      drupal_goto('node/' . $node->nid . '/' . 'browse');
     }
 
     // Not deleting, so get form and portals.
@@ -834,37 +838,7 @@ function filemaker_browse_submit(&$form, &$form_state) {
 
   $node = node_load($nid);
 
-  // Create FileMaker EditCommand object.
-  $fm = filemaker_filemaker_object($node->fmcid);
-  $record = $fm->newEditCommand($node->layout, $fmid);
-
-  // Loop through fields, setting each one in the FileMaker EditCommand object.
-  $fields_sql = "SELECT name, widget FROM {filemaker_field} WHERE nid = %d ORDER BY weight, fmfid";
-  $fields_result = db_query($fields_sql, $node->nid);
-  while ($data = db_fetch_object($fields_result)) {
-
-    // Prepare data to be written to FileMaker.
-    filemaker_format_all($data, $form_state, $record);
-  }
-
-  // Update record.
-  $result = $record->execute();
-
-  // Success or error message.
-  if (filemaker_is_error($result)) {
-    return;
-  }
-
-  else {
-
-    // Fire off the update hook.
-    module_invoke_all('filemaker', 'update', $node);
-    
-    drupal_set_message(t('Record saved to FileMaker.'));
-  }
-
-  // Perform new find.
-  filemaker_perform_find($nid);
+  filemaker_update_record($node, $fmid, $form_state);
 
   // Reload the current page, minus the form, to display new found set.
   drupal_goto(arg(0) . '/' . arg(1) . '/' . arg(2));
@@ -1276,9 +1250,6 @@ function filemaker_delete_record($node, $fmid) {
       filemaker_perform_find($node->nid);
     }
   }
-
-  // Reload this tab with new found set.
-  drupal_goto('node/' . $node->nid . '/' . 'browse');
 }
 
 
@@ -1313,6 +1284,47 @@ function filemaker_found_set($nid) {
   }
 
   return $output;
+}
+
+
+
+
+/**
+ * Updates an existing FileMaker record.
+ */
+function filemaker_update_record($node, $fmid, &$form_state) {
+
+  // Create FileMaker EditCommand object.
+  $fm = filemaker_filemaker_object($node->fmcid);
+  $record = $fm->newEditCommand($node->layout, $fmid);
+
+  // Loop through fields, setting each one in the FileMaker EditCommand object.
+  $fields_sql = "SELECT name, widget FROM {filemaker_field} WHERE nid = %d ORDER BY weight, fmfid";
+  $fields_result = db_query($fields_sql, $node->nid);
+  while ($data = db_fetch_object($fields_result)) {
+
+    // Prepare data to be written to FileMaker.
+    filemaker_format_all($data, $form_state, $record);
+  }
+
+  // Update record.
+  $result = $record->execute();
+
+  // Success or error message.
+  if (filemaker_is_error($result)) {
+    return;
+  }
+
+  else {
+
+    // Fire off the update hook.
+    module_invoke_all('filemaker', 'update', $node);
+    
+    drupal_set_message(t('Record saved to FileMaker.'));
+  }
+
+  // Perform new find.
+  filemaker_perform_find($node->nid);
 }
 
 
@@ -1546,7 +1558,7 @@ function filemaker_field_for_form_array($name, $label, $widget, $default_value, 
     $field['#options'] = $options;
   }
 
-  // Checkboxes must have #default_values as an array.
+  // Checkboxes must have #default_value as an array.
   if ($widget == 'checkboxes') {
     
     if (empty($field['#default_value'])) {
@@ -1556,6 +1568,12 @@ function filemaker_field_for_form_array($name, $label, $widget, $default_value, 
     else {
       $field['#default_value'] = explode("\n", $field['#default_value']);
     }
+  }
+
+  // Dates must have #default_value as an array.
+  if ($widget == 'date' && !empty($field['#default_value'])) {
+
+    $field['#default_value'] = filemaker_format_date_for_drupal($field['#default_value']);
   }
 
   return $field;
@@ -1786,7 +1804,7 @@ function filemaker_tab_access($permission) {
 
 
 /*************************************************************
- * Prepare data for FileMaker (format data)
+ * Formats data for FileMaker
  *************************************************************/
 
 
@@ -1794,7 +1812,7 @@ function filemaker_tab_access($permission) {
 
 
 /**
- * Prepares data to be written to FileMaker.
+ * Formats data to be written to FileMaker.
  */
 function filemaker_format_all($field, &$form_state, &$record) {
 
@@ -1817,7 +1835,7 @@ function filemaker_format_all($field, &$form_state, &$record) {
 
 
 /**
- * Prepares data in Drupal checkboxes to be written to FileMaker.
+ * Formats data in Drupal checkboxes to be written to FileMaker.
  *
  * Turns an array of options into a string of selected options.
  *
@@ -1851,7 +1869,7 @@ function filemaker_format_checkboxes($form_state_value) {
 
 
 /**
- * Prepares a Drupal date for FileMaker.
+ * Formats a Drupal date for FileMaker.
  *
  * @param $date
  *   A date value stored as an array, from Drupal form API.
@@ -1862,6 +1880,43 @@ function filemaker_format_checkboxes($form_state_value) {
 function filemaker_format_date($date) {
 
   return $date['month'] . '/' . $date['day'] . '/' . $date['year'];
+}
+
+
+
+
+
+
+
+
+
+/*************************************************************
+ * Formats data for Drupal
+ *************************************************************/
+
+
+
+
+
+/**
+ * Formats a FileMaker date for a Drupal form.
+ *
+ * @param $date
+ *  A date stored as a string in the format mm/dd/yyyy.
+ *
+ * @return
+ *  A date stored as an array suitable for Drupal's form API.
+ */
+function filemaker_format_date_for_drupal($date) {
+
+  $date = array(
+    // Use ltrim() to eliminate leading zero for month and day.
+    'month' => ltrim(drupal_substr($date, 0, 2), 0),
+    'day' => ltrim(drupal_substr($date, 3, 2), 0),
+    'year' => drupal_substr($date, 6),
+  );
+
+  return $date;
 }
 
 
@@ -1886,6 +1941,7 @@ function filemaker_ds($v) {
     drupal_set_message('<pre>' . print_r($v, 1) . '</pre>');
   }
 }
+
 
 
 
