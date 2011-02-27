@@ -229,7 +229,7 @@ function filemaker_node_info() {
  */
 function filemaker_view($node, $teaser = FALSE, $page = FALSE) {
 
-  // Default view of node. All of the interesting stuff happens under the tabs attached to the node.
+  // Default view of node. 
   $node = node_prepare($node, $teaser);
 
   // Add selected FileMaker feature to Drupal's node view.
@@ -536,8 +536,7 @@ function filemaker_browse_tab() {
     // Delete?
     if ($delete == 'delete') {
       $fm = filemaker_filemaker_object($node->fmcid); // FileMaker object.
-      $layout = $node->layout;
-      $delete_command = $fm->newDeleteCommand($layout, $fmid); // FileMaker_Command_Delete object.
+      $delete_command = $fm->newDeleteCommand($node->layout, $fmid); // FileMaker_Command_Delete object.
       $result = $delete_command->execute(); // FileMaker_Result object.
       if (!filemaker_is_error($result)) {
 
@@ -548,6 +547,7 @@ function filemaker_browse_tab() {
           filemaker_perform_find($nid);
         }
       }
+
       // Reload this tab with new found set.
       drupal_goto('node/' . $nid . '/' . 'browse');
     }
@@ -676,7 +676,7 @@ function filemaker_record_form() {
 
   $form = array();
 
-  // Are we in normal Drupal node view (note a FileMaker tab)?
+  // Are we in normal Drupal node view (not a FileMaker tab)?
   if (empty($tab)) {
     if ($node->fmview == 'create_mode') {
       $tab = 'create';
@@ -844,6 +844,7 @@ function filemaker_browse_submit(&$form, &$form_state) {
   if (filemaker_is_error($result)) {
     return;
   }
+
   else {
 
     // Fire off the update hook.
@@ -873,6 +874,7 @@ function filemaker_create_submit(&$form, &$form_state) {
   $node = node_load($nid);
 
   $fm = filemaker_filemaker_object($node->fmcid); // FileMaker object.
+
   if ($node->layout) {
     $record = $fm->createRecord($node->layout); // FileMaker_Record object.
     if (filemaker_is_error($record)) return;
@@ -1615,7 +1617,7 @@ function filemaker_perform_find($nid) {
   // Store table of foundset in session for browse mode to display.
   $_SESSION['filemaker'][$nid]['foundset']['table'] = $results_table;
 
-  // Only display success message to user if they initiated the find from the 'Find mode' tab.
+  // Only display success message to user if we initiated find from 'Find mode' tab.
   if ($tab == 'find') {
     drupal_set_message(t('FileMaker find performed.'));
   }
@@ -1665,8 +1667,10 @@ function filemaker_filemaker_object($fmcid) {
 function filemaker_load_api() {
 
   if (!class_exists('FileMaker')) {
+
     // Try using libraries module.
     if (module_exists('libraries')) {
+
       $libraries_path= drupal_get_path('module', 'libraries');
       $libraries_include = $libraries_path . '/' . 'libraries.module';
       
@@ -1679,6 +1683,7 @@ function filemaker_load_api() {
       }
     }
   }
+
   // Tell the caller if the FileMaker class exists.
   return class_exists('FileMaker');
 }
@@ -1708,6 +1713,14 @@ function filemaker_tab_access($permission) {
 
 
 
+/*************************************************************
+ * Prepare data for FileMaker (format data)
+ *************************************************************/
+
+
+
+
+
 /**
  * Prepares data to be written to FileMaker.
  */
@@ -1723,7 +1736,7 @@ function filemaker_format_all($field, &$form_state, &$record) {
       $form_state['values'][$field->name] = filemaker_format_checkboxes($form_state['values'][$field->name]);
     }
 
-    // Update FileMaker Record object with value from form.
+    // Update FileMaker_Record object with value from form.
     $record->setField($field->name, $form_state['values'][$field->name]);
 }
 
@@ -1733,6 +1746,8 @@ function filemaker_format_all($field, &$form_state, &$record) {
 
 /**
  * Prepares data in Drupal checkboxes to be written to FileMaker.
+ *
+ * Turns an array of options into a string of selected options.
  *
  * @param $form_state_value
  *   An array of options.
@@ -1764,7 +1779,13 @@ function filemaker_format_checkboxes($form_state_value) {
 
 
 /**
- * Formats a Drupal date for FileMaker.
+ * Prepares a Drupal date for FileMaker.
+ *
+ * @param $date
+ *   A date value stored as an array, from Drupal form API.
+ *
+ * @return
+ *   The date as a string: mm/dd/yyyy
  */
 function filemaker_format_date($date) {
 
@@ -1784,17 +1805,6 @@ function filemaker_format_date($date) {
 
 
 /**
- *  More help with debugging 
- */
-function filemaker_called() {
-  $f = debug_backtrace();
-  ds($f[2]['function'] . '->' . $f[1]['function']);
-}
-
-
-
-
-/**
  * Debugging output made pretty.  Object-aware. 
  */
 function filemaker_ds($v) {  
@@ -1803,4 +1813,15 @@ function filemaker_ds($v) {
   } else {
     drupal_set_message('<pre>' . print_r($v, 1) . '</pre>');
   }
+}
+
+
+
+
+/**
+ *  More help with debugging 
+ */
+function filemaker_called() {
+  $f = debug_backtrace();
+  ds($f[2]['function'] . '->' . $f[1]['function']);
 }
