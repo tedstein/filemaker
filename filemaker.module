@@ -1786,7 +1786,7 @@ function filemaker_format_date($date) {
 /**
  *  More help with debugging 
  */
-function squash_called() {
+function filemaker_called() {
   $f = debug_backtrace();
   ds($f[2]['function'] . '->' . $f[1]['function']);
 }
