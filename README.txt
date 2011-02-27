@@ -8,6 +8,7 @@ Features
 - Create, find, browse, and edit modes
 - Rich set of permissions
 - Choice of interface for anonymous users
+- Support for Drupal actions
 - Support for FileMaker portals
 - Support for all types of FileMaker value lists
 
