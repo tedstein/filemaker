@@ -668,7 +668,7 @@ function filemaker_fields_tab() {
 
 /**
  * Callback for the filemaker_record_form.
- *
+ *s
  * Creates a form to find, edit, or add a FileMaker record.
  */
 function filemaker_record_form() {

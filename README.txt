@@ -4,7 +4,7 @@
 Features
 ***********************************************************
 
-- Unlimited number of reusable connections to FileMaker database
+- Unlimited number of reusable connections to FileMaker databases
 - Create, find, browse, and edit modes
 - Rich set of permissions
 - Choice of interface for anonymous users
