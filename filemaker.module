@@ -535,21 +535,7 @@ function filemaker_browse_tab() {
 
     // Delete?
     if ($delete == 'delete') {
-      $fm = filemaker_filemaker_object($node->fmcid); // FileMaker object.
-      $delete_command = $fm->newDeleteCommand($node->layout, $fmid); // FileMaker_Command_Delete object.
-      $result = $delete_command->execute(); // FileMaker_Result object.
-      if (!filemaker_is_error($result)) {
-
-        drupal_set_message(t('Record deleted from FileMaker.'));
-
-        // Perform new find, to exclude deleted record from our found set.
-        if ($_SESSION['filemaker'][$nid]['foundset']['request']) {
-          filemaker_perform_find($nid);
-        }
-      }
-
-      // Reload this tab with new found set.
-      drupal_goto('node/' . $nid . '/' . 'browse');
+      filemaker_delete_record($node, $fmid);
     }
 
     // Not deleting, so get form and portals.
@@ -568,24 +554,8 @@ function filemaker_browse_tab() {
     }
   }
 
-  // Found set of records.
-  if (!empty($_SESSION['filemaker'][$nid]['foundset']['table'])) {
-
-    // X of N widget.
-    $foundset_count = $_SESSION['filemaker'][$nid]['foundset']['foundset_count'];
-    $record_count = $_SESSION['filemaker'][$nid]['foundset']['record_count'];
-    if ($foundset_count) {
-      $x_of_n = $foundset_count . ' of ' . $record_count;
-      $output .= '<h2>Found Set</h2>';
-      $output .= $x_of_n;
-    }
-
-    // Table of records in foundset.
-    $output .= $_SESSION['filemaker'][$nid]['foundset']['table'];
-  }
-  else {
-    $output .= t('No found set.');
-  }
+  // We always need a found set of records.
+  $output .= filemaker_found_set($nid);
 
   return $output;
 }
@@ -788,6 +758,13 @@ function filemaker_find_submit(&$form, &$form_state) {
   filemaker_perform_find($nid);
 }
 
+
+
+
+
+/**
+ * Performs a FileMaker find using the default values for each FileMaker field.
+ */
 function filemaker_default_find($node) {
 
   // Create FileMaker_Command_Find object.
@@ -1242,6 +1219,68 @@ function filemaker_field_submit(&$form, &$form_state) {
 /*************************************************************
  * Custom functions
  *************************************************************/
+
+
+
+
+
+/**
+ * Deletes a single FileMaker record.
+ */
+function filemaker_delete_record($node, $fmid) {
+
+  $fm = filemaker_filemaker_object($node->fmcid); // FileMaker object.
+  $delete_command = $fm->newDeleteCommand($node->layout, $fmid); // FileMaker_Command_Delete object.
+  $result = $delete_command->execute(); // FileMaker_Result object.
+
+  // Error?
+  if (!filemaker_is_error($result)) {
+
+    drupal_set_message(t('Record deleted from FileMaker.'));
+
+    // Perform new find, to exclude deleted record from our found set.
+    if ($_SESSION['filemaker'][$node->nid]['foundset']['request']) {
+      filemaker_perform_find($node->nid);
+    }
+  }
+
+  // Reload this tab with new found set.
+  drupal_goto('node/' . $node->nid . '/' . 'browse');
+}
+
+
+
+
+
+/**
+ * Returns a FileMaker found set in an html table, plus the x of n.
+ */
+function filemaker_found_set($nid) {
+
+  $output = '';
+
+  // First, check to see if there is a found set.
+  if (!empty($_SESSION['filemaker'][$nid]['foundset']['table'])) {
+
+    // X of N widget.
+    $foundset_count = $_SESSION['filemaker'][$nid]['foundset']['foundset_count'];
+    $record_count = $_SESSION['filemaker'][$nid]['foundset']['record_count'];
+    if ($foundset_count) {
+      $x_of_n = $foundset_count . ' of ' . $record_count;
+      $output .= '<h2>Found Set</h2>';
+      $output .= $x_of_n;
+    }
+
+    // Table of records in foundset.
+    $output .= $_SESSION['filemaker'][$nid]['foundset']['table'];
+  }
+
+  else {
+    $output .= t('No found set.');
+  }
+
+  return $output;
+}
 
 
 
