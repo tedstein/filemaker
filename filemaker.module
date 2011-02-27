@@ -7,6 +7,19 @@
  * Allows Drupal to interact with FileMaker databases.
  */
 
+
+
+
+
+/*************************************************************
+ * Menu and permissions hooks
+ *************************************************************/
+
+
+
+
+
+
 /**
  * Implementation of hook_menu().
  */
@@ -196,6 +209,7 @@ function filemaker_action_info_alter(&$info) {
 
 
 
+
 /*************************************************************
  * Node hooks
  *************************************************************/
@@ -220,6 +234,7 @@ function filemaker_node_info() {
     ),
   );
 }
+
 
 
 
@@ -252,6 +267,7 @@ function filemaker_view($node, $teaser = FALSE, $page = FALSE) {
 
   return $node;
 }
+
 
 
 
@@ -338,6 +354,7 @@ function filemaker_form($node) {
 
 
 
+
 /**
  * Validates filemaker_form.
  */
@@ -353,6 +370,7 @@ function filemaker_validate(&$form, &$form_state) {
 
 
 
+
 /**
  * Implementation of hook_load().
  */
@@ -363,12 +381,14 @@ function filemaker_load($node) {
 
 
 
+
 /**
  * Implementation of hook_insert().
  */
 function filemaker_insert($node) {
   db_query("INSERT INTO {filemaker} (nid, vid, fmcid, layout, fmview) VALUES (%d, %d, %d, '%s', '%s')", $node->nid, $node->vid, $node->fmcid, $node->layout, $node->fmview);
 }
+
 
 
 
@@ -385,6 +405,7 @@ function filemaker_delete($node) {
 
 
 
+
 /**
  * Implementation of hook_update().
  */
@@ -396,6 +417,7 @@ function filemaker_update($node) {
     db_query("UPDATE {filemaker} SET fmcid = %d, layout = '%s', fmview = '%s' WHERE vid = %d", $node->fmcid, $node->layout, $node->fmview, $node->vid);
   }
 }
+
 
 
 
@@ -417,9 +439,12 @@ function filemaker_access($op, $node, $account) {
 
 
 
+
+
 /*************************************************************
  * Page callbacks
  *************************************************************/
+
 
 
 
@@ -452,6 +477,8 @@ function filemaker_layout_tab() {
 
 
 
+
+
 /**
  * Page callback for the 'Create Mode' tab on a filemaker node.
  *
@@ -461,6 +488,7 @@ function filemaker_create_tab() {
 
   return drupal_get_form('filemaker_record_form');
 }
+
 
 
 
@@ -506,6 +534,7 @@ function filemaker_portals_tab() {
 
   return $output;
 }
+
 
 
 
@@ -563,6 +592,7 @@ function filemaker_browse_tab() {
 
 
 
+
 /**
  * Page callback for the find mode tab on a filemaker node.
  *
@@ -572,6 +602,7 @@ function filemaker_find_tab() {
 
   return drupal_get_form('filemaker_record_form');
 }
+
 
 
 
@@ -621,9 +652,11 @@ function filemaker_fields_tab() {
 
 
 
+
 /*************************************************************
  * Forms
  *************************************************************/
+
 
 
 
