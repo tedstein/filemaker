@@ -807,6 +807,10 @@ function filemaker_browse_submit(&$form, &$form_state) {
     return;
   }
   else {
+
+    // Fire off the update hook.
+    module_invoke_all('filemaker', 'update', $node);
+    
     drupal_set_message(t('Record saved to FileMaker.'));
   }
 
@@ -858,7 +862,7 @@ function filemaker_create_submit(&$form, &$form_state) {
 
     drupal_set_message(t('Record saved to FileMaker.'));
 
-    // Fire off the hook.
+    // Fire off the create hook.
     module_invoke_all('filemaker', 'create', $node);
     
     // If record saved, update found set so new record is included.
