@@ -1238,8 +1238,8 @@ function filemaker_field_submit(&$form, &$form_state) {
 function filemaker_default_find($node) {
 
   // Create FileMaker_Command_Find object.
-  $fm = filemaker_filemaker_object($node->fmcid);
-  $request = $fm->newFindCommand($node->layout);
+  $fm = filemaker_filemaker_object($node->fmcid); // FileMaker object
+  $request = $fm->newFindCommand($node->layout); // FileMaker_Command_Find object
 
   // Get fields added to this FileMaker node.
   $fields_sql = "SELECT name, label, widget, default_value FROM {filemaker_field} WHERE nid = %d ORDER BY weight, fmfid";
@@ -1250,7 +1250,8 @@ function filemaker_default_find($node) {
     $request->addFindCriterion($data->name, $data->default_value);
   }
 
-  // Store find request in session so that we can perform a new find to recreate the found set if record in it is edited or deleted.
+  // Store find request in session so we can perform another find 
+  // if record is edited, created, or deleted.
   $_SESSION['filemaker'][$node->nid]['foundset']['request'] = serialize($request);
 
   filemaker_perform_find($node->nid);
@@ -1672,8 +1673,8 @@ function filemaker_perform_find($nid) {
 
   // Might need to load class definition from the API to avoid error when unserializing FileMaker_Command_Find object.
   // We do this by creating an empty FileMaker_Command_Find object.
-  $fm = filemaker_filemaker_object($node->fmcid);
-  $request = $fm->newFindCommand($node->layout);
+  $fm = filemaker_filemaker_object($node->fmcid); // FileMaker object
+  $request = $fm->newFindCommand($node->layout); // FileMaker_Command_Find object
   
   // Find out if we can safely unserialize FileMaker_Command_Find object.
   if (class_exists('FileMaker_Command_Find')) {
@@ -1813,7 +1814,7 @@ function filemaker_load_api() {
 
 
 /**
- * Checks node access for a tab.
+ * Checks user access for a tab on a FileMaker node.
  */
 function filemaker_tab_access($permission) {
 
