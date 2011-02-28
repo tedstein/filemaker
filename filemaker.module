@@ -732,7 +732,7 @@ function filemaker_record_form() {
     switch ($tab) {
 
       case 'create':
-        $form['fmnode'][$data->name] = filemaker_field_for_form_array($data->name, $data->label, $data->widget, $data->default_value, FALSE);
+        $form['fmnode'][$data->name] = filemaker_field_for_form_array($data->name, $data->label, $data->widget, $data->default_value, $data->required);
         break;
 
       case 'find':
@@ -741,7 +741,7 @@ function filemaker_record_form() {
 
       case 'browse':
         $record_data = check_plain($filemaker_record->getField($data->name));
-        $form['fmnode'][$data->name] = filemaker_field_for_form_array($data->name, $data->label, $data->widget, $record_data, FALSE);
+        $form['fmnode'][$data->name] = filemaker_field_for_form_array($data->name, $data->label, $data->widget, $record_data, $data->required);
         break;
 
     }
@@ -795,33 +795,6 @@ function filemaker_find_submit(&$form, &$form_state) {
   filemaker_perform_find($nid);
 }
 
-
-
-
-
-/**
- * Performs a FileMaker find using the default values for each FileMaker field.
- */
-function filemaker_default_find($node) {
-
-  // Create FileMaker_Command_Find object.
-  $fm = filemaker_filemaker_object($node->fmcid);
-  $request = $fm->newFindCommand($node->layout);
-
-  // Get fields added to this FileMaker node.
-  $fields_sql = "SELECT name, label, widget, default_value FROM {filemaker_field} WHERE nid = %d ORDER BY weight, fmfid";
-  $fields_result = db_query($fields_sql, $node->nid);
-
-  // Loop through fields, setting each one.
-  while ($data = db_fetch_object($fields_result)) {
-    $request->addFindCriterion($data->name, $data->default_value);
-  }
-
-  // Store find request in session so that we can perform a new find to recreate the found set if record in it is edited or deleted.
-  $_SESSION['filemaker'][$node->nid]['foundset']['request'] = serialize($request);
-
-  filemaker_perform_find($node->nid);
-}
 
 
 
@@ -1163,6 +1136,14 @@ function filemaker_field_form() {
     '#default_value' => $field_result->default_value,
   );
 
+  // Required?
+  $form['fmfield']['fmfieldrequired'] = array(
+    '#title' => t('Required?'),
+    '#type' => 'checkbox',
+    '#required' => FALSE,
+    '#default_value' => $field_result->required,
+  );
+
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Save Field'),
@@ -1211,9 +1192,10 @@ function filemaker_field_submit(&$form, &$form_state) {
     $sql .= "weight = %d, ";
     $sql .= "type = '%s', ";
     $sql .= "widget = '%s', ";
-    $sql .= "default_value = '%s' ";
+    $sql .= "default_value = '%s', ";
+    $sql .= "required = %d ";
     $sql .= "WHERE fmfid = %d";
-    db_query($sql, $form_state['values']['fmfieldname'], $form_state['values']['fmfieldlabel'], 0, $field_type,  $form_state['values']['fmfieldwidget'], $form_state['values']['fmfielddefault'], $form_state['values']['fmfid']);
+    db_query($sql, $form_state['values']['fmfieldname'], $form_state['values']['fmfieldlabel'], 0, $field_type,  $form_state['values']['fmfieldwidget'], $form_state['values']['fmfielddefault'], $form_state['values']['fmfieldrequired'], $form_state['values']['fmfid']);
   }
 
   drupal_goto(arg(0) . '/' . arg(1) . '/' . arg(2) . '/' . arg(3));
@@ -1226,6 +1208,34 @@ function filemaker_field_submit(&$form, &$form_state) {
 /*************************************************************
  * Custom functions
  *************************************************************/
+
+
+
+
+
+/**
+ * Performs a FileMaker find using the default values for each FileMaker field.
+ */
+function filemaker_default_find($node) {
+
+  // Create FileMaker_Command_Find object.
+  $fm = filemaker_filemaker_object($node->fmcid);
+  $request = $fm->newFindCommand($node->layout);
+
+  // Get fields added to this FileMaker node.
+  $fields_sql = "SELECT name, label, widget, default_value FROM {filemaker_field} WHERE nid = %d ORDER BY weight, fmfid";
+  $fields_result = db_query($fields_sql, $node->nid);
+
+  // Loop through fields, setting each one.
+  while ($data = db_fetch_object($fields_result)) {
+    $request->addFindCriterion($data->name, $data->default_value);
+  }
+
+  // Store find request in session so that we can perform a new find to recreate the found set if record in it is edited or deleted.
+  $_SESSION['filemaker'][$node->nid]['foundset']['request'] = serialize($request);
+
+  filemaker_perform_find($node->nid);
+}
 
 
 

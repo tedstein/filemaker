@@ -175,6 +175,11 @@ function filemaker_schema() {
         'type' => 'text',
         'not null' => FALSE,
       ),
+      'required' => array(
+        'description' => t('Contains the number 1 if the field is required.'),
+        'type' => 'int',
+        'not null' => FALSE,
+      ),
     ),
     'primary key' => array('fmfid'),
   );
