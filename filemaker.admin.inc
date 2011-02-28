@@ -23,7 +23,7 @@ function filemaker_admin_settings_page() {
 
   $add_connection_link = l('Add a connection', 'admin/settings/filemaker/connection');
   drupal_set_message($add_connection_link);
-  
+
   $head = array('fmcid', 'Hostname', 'Database', 'Username', 'Password', 'Actions');
   $rows = array();
 

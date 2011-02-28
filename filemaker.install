@@ -7,7 +7,7 @@
  */
 
 /**
- * Implmentation of hook_requirements().
+ * Implementation of hook_requirements().
  */
 function filemaker_requirements($phase) {
   if ($phase == "runtime") {
@@ -183,7 +183,7 @@ function filemaker_schema() {
     ),
     'primary key' => array('fmfid'),
   );
-    
+
   $schema['filemaker_portal'] = array(
     'description' => t('An instance of a FileMaker portal to appear on a FileMaker node'),
     'fields' => array(
