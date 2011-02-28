@@ -200,7 +200,7 @@ function filemaker_action_info_alter(&$info) {
 
       // Add our trigger to the approved list of hooks.
       else {
-        $info[$type]['hooks']['filemaker'] = array('create', 'update',);
+        $info[$type]['hooks']['filemaker'] = array('create', 'update');
       }
     }
   }
@@ -1966,9 +1966,11 @@ function filemaker_format_date_for_drupal($date) {
  * Debugging output made pretty.  Object-aware. 
  */
 function filemaker_ds($v) {  
-  if(is_object($v)) {
+  if (is_object($v)) {
     drupal_set_message('<pre>' . print_r((array) $v, 1) . '</pre>');
-  } else {
+  }
+
+  else {
     drupal_set_message('<pre>' . print_r($v, 1) . '</pre>');
   }
 }
