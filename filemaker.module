@@ -244,7 +244,7 @@ function filemaker_node_info() {
  */
 function filemaker_view($node, $teaser = FALSE, $page = FALSE) {
 
-  // Default view of node. 
+  // Default view of node.
   $node = node_prepare($node, $teaser);
 
   // Add selected FileMaker feature to Drupal's node view.
@@ -725,7 +725,7 @@ function filemaker_record_form() {
   // Get fields attached to node.
   $fields_sql = "SELECT * FROM {filemaker_field} WHERE nid = %d ORDER BY weight, fmfid";
   $fields_result = db_query($fields_sql, $node->nid);
-  
+
   // Loop through fields, adding each one to the form.
   while ($data = db_fetch_object($fields_result)) {
 
@@ -861,7 +861,7 @@ function filemaker_create_submit(&$form, &$form_state) {
 
     // Fire off the create hook.
     module_invoke_all('filemaker', 'create', $node);
-    
+
     // If record saved, update found set so new record is included.
     filemaker_perform_find($nid);
   }
@@ -1183,7 +1183,7 @@ function filemaker_field_submit(&$form, &$form_state) {
     $sql = "INSERT INTO {filemaker_field} ";
     $sql .= "(fmfid, nid, name, label, weight, type, widget, default_value, required) ";
     $sql .= "VALUES (NULL, %d, '%s', '%s', %d, '%s', '%s', '%s', %d)";
-    db_query($sql, 
+    db_query($sql,
       $node->nid, // nid
       $form_state['values']['fmfieldname'], // name
       $form_state['values']['fmfieldlabel'], // label
@@ -1250,7 +1250,7 @@ function filemaker_default_find($node) {
     $request->addFindCriterion($data->name, $data->default_value);
   }
 
-  // Store find request in session so we can perform another find 
+  // Store find request in session so we can perform another find
   // if record is edited, created, or deleted.
   $_SESSION['filemaker'][$node->nid]['foundset']['request'] = serialize($request);
 
@@ -1350,7 +1350,7 @@ function filemaker_update_record($node, $fmid, &$form_state) {
 
     // Fire off the update hook.
     module_invoke_all('filemaker', 'update', $node);
-    
+
     drupal_set_message(t('Record saved to FileMaker.'));
   }
 
@@ -1591,7 +1591,7 @@ function filemaker_field_for_form_array($name, $label, $widget, $default_value, 
 
   // Checkboxes must have #default_value as an array.
   if ($widget == 'checkboxes') {
-    
+
     if (empty($field['#default_value'])) {
       $field['#default_value'] = array();
     }
@@ -1675,7 +1675,7 @@ function filemaker_perform_find($nid) {
   // We do this by creating an empty FileMaker_Command_Find object.
   $fm = filemaker_filemaker_object($node->fmcid); // FileMaker object
   $request = $fm->newFindCommand($node->layout); // FileMaker_Command_Find object
-  
+
   // Find out if we can safely unserialize FileMaker_Command_Find object.
   if (class_exists('FileMaker_Command_Find')) {
     $request = unserialize($_SESSION['filemaker'][$nid]['foundset']['request']);
@@ -1751,7 +1751,7 @@ function filemaker_perform_find($nid) {
 /**
  * Create a FileMaker object.
  *
- * It is important to only use this function to connect to the FileMaker API, to avoid 
+ * It is important to only use this function to connect to the FileMaker API, to avoid
  * defining the same class multiple times.
  *
  * @param $fmcid
@@ -1763,7 +1763,7 @@ function filemaker_perform_find($nid) {
 function filemaker_filemaker_object($fmcid) {
 
   // This is the single point of entry to the FileMaker API for PHP.
-  filemaker_load_api(); 
+  filemaker_load_api();
 
   // Select the authentication information from the Drupal database.
   $fmc_sql = "SELECT * FROM {filemaker_connection} WHERE fmcid = %d";
@@ -1794,7 +1794,7 @@ function filemaker_load_api() {
 
       $libraries_path= drupal_get_path('module', 'libraries');
       $libraries_include = $libraries_path . '/' . 'libraries.module';
-      
+
       include_once($libraries_include);
 
       // Let's see if the FileMaker API is really available from libraries.
@@ -1963,9 +1963,9 @@ function filemaker_format_date_for_drupal($date) {
 
 
 /**
- * Debugging output made pretty.  Object-aware. 
+ * Debugging output made pretty.  Object-aware.
  */
-function filemaker_ds($v) {  
+function filemaker_ds($v) {
   if (is_object($v)) {
     drupal_set_message('<pre>' . print_r((array) $v, 1) . '</pre>');
   }
@@ -1980,7 +1980,7 @@ function filemaker_ds($v) {
 
 
 /**
- *  More help with debugging 
+ *  More help with debugging
  */
 function filemaker_called() {
   $f = debug_backtrace();
