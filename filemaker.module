@@ -865,7 +865,6 @@ function filemaker_create_submit(&$form, &$form_state) {
     // If record saved, update found set so new record is included.
     filemaker_perform_find($nid);
   }
-
 }
 
 
@@ -1166,8 +1165,7 @@ function filemaker_field_submit(&$form, &$form_state) {
 
   $mode = $form_state['values']['mode'];
 
-  $fmcid = $node->fmcid;
-  $fm = filemaker_filemaker_object($fmcid); // FileMaker object.
+  $fm = filemaker_filemaker_object($node->fmcid); // FileMaker object.
   $layout = $fm->getLayout($node->layout); // FileMaker_Layout object.
   if (filemaker_is_error($layout)) return;
   $fields = $layout->getFields(); // Array of FileMaker_Field objects.
@@ -1182,9 +1180,21 @@ function filemaker_field_submit(&$form, &$form_state) {
   }
 
   if ($mode == 'insert') {
-    $sql = "INSERT INTO {filemaker_field} (fmfid, nid, name, label, weight, type, widget, default_value) VALUES (NULL, %d, '%s', '%s', %d, '%s', '%s', '%s')";
-    db_query($sql, $node->nid, $form_state['values']['fmfieldname'], $form_state['values']['fmfieldlabel'], 0, $field_type, $form_state['values']['fmfieldwidget'], $form_state['values']['fmfielddefault']);
+    $sql = "INSERT INTO {filemaker_field} ";
+    $sql .= "(fmfid, nid, name, label, weight, type, widget, default_value, required) ";
+    $sql .= "VALUES (NULL, %d, '%s', '%s', %d, '%s', '%s', '%s', %d)";
+    db_query($sql, 
+      $node->nid, // nid
+      $form_state['values']['fmfieldname'], // name
+      $form_state['values']['fmfieldlabel'], // label
+      0, // weight
+      $field_type, // type
+      $form_state['values']['fmfieldwidget'], // widget
+      $form_state['values']['fmfielddefault'], // default
+      $form_state['values']['fmfieldrequired'] // required
+    );
   }
+
   elseif ($mode == 'update') {
     $sql = "UPDATE {filemaker_field} SET  ";
     $sql .= "name = '%s', ";
@@ -1195,7 +1205,16 @@ function filemaker_field_submit(&$form, &$form_state) {
     $sql .= "default_value = '%s', ";
     $sql .= "required = %d ";
     $sql .= "WHERE fmfid = %d";
-    db_query($sql, $form_state['values']['fmfieldname'], $form_state['values']['fmfieldlabel'], 0, $field_type,  $form_state['values']['fmfieldwidget'], $form_state['values']['fmfielddefault'], $form_state['values']['fmfieldrequired'], $form_state['values']['fmfid']);
+    db_query($sql,
+      $form_state['values']['fmfieldname'], // name
+      $form_state['values']['fmfieldlabel'], // label
+      0, // weight
+      $field_type,  // type
+      $form_state['values']['fmfieldwidget'], // widget
+      $form_state['values']['fmfielddefault'], // default
+      $form_state['values']['fmfieldrequired'], // required
+      $form_state['values']['fmfid'] // fmfid
+    );
   }
 
   drupal_goto(arg(0) . '/' . arg(1) . '/' . arg(2) . '/' . arg(3));
@@ -1295,6 +1314,7 @@ function filemaker_found_set($nid) {
 
   return $output;
 }
+
 
 
 
