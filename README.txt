@@ -4,13 +4,14 @@
 Features
 ***********************************************************
 
-- Unlimited number of reusable connections to FileMaker databases
 - Create, find, browse, and edit modes
 - Rich set of permissions
 - Choice of interface for anonymous users
-- Support for Drupal actions
+- Support for actions and triggers
+- Support for tokens
 - Support for FileMaker portals
 - Support for all types of FileMaker value lists
+- Unlimited number of reusable connections to FileMaker databases
 
 ***********************************************************
 Requirements (FileMaker)
