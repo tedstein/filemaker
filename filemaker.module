@@ -203,16 +203,21 @@ function filemaker_hook_info() {
  */
 function filemaker_filemaker($op, $node) {
 
-  // Collect the actions that we need to fire.
-  $aids = _trigger_get_hook_aids('filemaker', $op);
+  // Don't do anything unless the trigger module exists,
+  // to avoid a dependency.
+  if (module_exists('trigger')) {
 
-  $context = array(
-    'hook' => 'filemaker',
-    'op' => $op,
-    'node' => $node,
-  );
+    // Collect the actions that we need to fire.
+    $aids = _trigger_get_hook_aids('filemaker', $op);
 
-  actions_do(array_keys($aids), $node, $context);
+    $context = array(
+        'hook' => 'filemaker',
+        'op' => $op,
+        'node' => $node,
+        );
+
+    actions_do(array_keys($aids), $node, $context);
+  }
 }
 
 
@@ -1292,7 +1297,7 @@ function filemaker_default_find($node) {
   $fields_sql = "SELECT name, label, widget, default_value FROM {filemaker_field} WHERE nid = %d ORDER BY weight, fmfid";
   $fields_result = db_query($fields_sql, $node->nid);
 
-  // Loop through fields, setting each one.
+  // Loop through fields, setting each one with the default value.
   while ($data = db_fetch_object($fields_result)) {
     $request->addFindCriterion($data->name, $data->default_value);
   }
