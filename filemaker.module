@@ -1315,6 +1315,9 @@ function filemaker_default_find($node) {
  */
 function filemaker_add_field_to_token(&$node, $field, $value) {
 
+  $field = check_plain($field);
+  $value = check_plain($value);
+
   if ($value) {
     $node->fmtoken .= $field->name . ': ' . $value . "\n";
   }

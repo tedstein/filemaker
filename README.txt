@@ -4,14 +4,19 @@
 Features
 ***********************************************************
 
+FileMaker features:
+
 - Create, find, browse, and edit modes
+- FileMaker portals
+- Value lists (all types)
+- Unlimited number of reusable connections to FileMaker databases
+
+Drupal features and integration:
+
+- Actions and triggers
+- Tokens
 - Rich set of permissions
 - Choice of interface for anonymous users
-- Support for actions and triggers
-- Support for tokens
-- Support for FileMaker portals
-- Support for all types of FileMaker value lists
-- Unlimited number of reusable connections to FileMaker databases
 
 ***********************************************************
 Requirements (FileMaker)
