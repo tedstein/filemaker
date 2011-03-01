@@ -160,7 +160,7 @@ function filemaker_token_values($type, $object = NULL, $options = array()) {
  * Implementation of hook_token_list().
  */
 function filemaker_token_list($type = 'all') {
-  $tokens['node']['filemaker'] = t("The value of the FileMaker fields.");
+  $tokens['node']['filemaker'] = t("The values of the FileMaker fields.");
   return $tokens;
 }
 
