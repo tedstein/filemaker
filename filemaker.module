@@ -132,7 +132,44 @@ function filemaker_perm() {
 
 
 /*************************************************************
- * Custom hooks
+ * Token hooks
+ *************************************************************/
+
+
+
+
+
+/**
+ * Implementation of hook_token_values().
+ */
+function filemaker_token_values($type, $object = NULL, $options = array()) {
+
+  // Only supply for tokens for node.
+  if ($type == "node") {
+    $node = $object;
+    $tokens['filemaker'] = $node->fmtoken;
+    return $tokens;
+  }
+}
+
+
+
+
+
+/**
+ * Implementation of hook_token_list().
+ */
+function filemaker_token_list($type = 'all') {
+  $tokens['node']['filemaker'] = t("The value of the FileMaker fields.");
+  return $tokens;
+}
+
+
+
+
+
+/*************************************************************
+ * Action/Trigger hooks
  *************************************************************/
 
 
@@ -190,8 +227,8 @@ function filemaker_action_info_alter(&$info) {
   // Loop through each action.
   foreach ($info as $type => $data) {
 
-    // Only add our trigger to node or system actions.
-    if (stripos($type, "node_") === 0 || stripos($type, "system_") === 0) {
+    // Only add our trigger to node, system, or trigger actions.
+    if (stripos($type, "node_") === 0 || stripos($type, "system_") === 0 || stripos($type, "token_") === 0) {
 
       // Don't remove any triggers that are already added to the approved list.
       if (isset($info[$type]['hooks']['application'])) {
@@ -374,8 +411,13 @@ function filemaker_validate(&$form, &$form_state) {
 /**
  * Implementation of hook_load().
  */
-function filemaker_load($node) {
+function filemaker_load(&$node) {
+
+  // Create place for FileMaker node token.
+  $node->fmtoken = '';
+
   return db_fetch_object(db_query('SELECT fmcid, layout, fmview FROM {filemaker} WHERE vid = %d', $node->vid));
+
 }
 
 
@@ -845,10 +887,15 @@ function filemaker_create_submit(&$form, &$form_state) {
   $fields_result = db_query($fields_sql, $node->nid);
 
   // Loop through fields, setting each one in the FileMaker_Record object.
-  while ($data = db_fetch_object($fields_result)) {
+  while ($field = db_fetch_object($fields_result)) {
 
     // Prepare data to be written to FileMaker.
-    filemaker_format_all($data, $form_state, $record);
+    filemaker_format_all($field, $form_state, $record);
+      
+    // Add field to our FileMaker token if we have a value.
+    if ($record->getField($field->name)) {
+      $node->fmtoken .= $field->name . ': ' . $record->getField($field->name) . "\n";
+    }
   }
 
   // Save the new record to the FileMaker database.
