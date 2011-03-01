@@ -144,7 +144,7 @@ function filemaker_perm() {
  */
 function filemaker_token_values($type, $object = NULL, $options = array()) {
 
-  // Only supply for tokens for node.
+  // Only supply tokens for node.
   if ($type == "node") {
     $node = $object;
     $tokens['filemaker'] = $node->fmtoken;
@@ -232,7 +232,7 @@ function filemaker_action_info_alter(&$info) {
   // Loop through each action.
   foreach ($info as $type => $data) {
 
-    // Only add our trigger to node, system, or trigger actions.
+    // Only add our trigger to node, system, or token actions.
     if (stripos($type, "node_") === 0 || stripos($type, "system_") === 0 || stripos($type, "token_") === 0) {
 
       // Don't remove any triggers that are already added to the approved list.
@@ -422,7 +422,6 @@ function filemaker_load(&$node) {
   $node->fmtoken = '';
 
   return db_fetch_object(db_query('SELECT fmcid, layout, fmview FROM {filemaker} WHERE vid = %d', $node->vid));
-
 }
 
 
@@ -898,9 +897,7 @@ function filemaker_create_submit(&$form, &$form_state) {
     filemaker_format_all($field, $form_state, $record);
       
     // Add field to our FileMaker token if we have a value.
-    if ($record->getField($field->name)) {
-      $node->fmtoken .= $field->name . ': ' . $record->getField($field->name) . "\n";
-    }
+    filemaker_add_field_to_token($node, $field, $record->getField($field->name));
   }
 
   // Save the new record to the FileMaker database.
@@ -1314,6 +1311,20 @@ function filemaker_default_find($node) {
 
 
 /**
+ * Adds field and value to token, if there is a value.
+ */
+function filemaker_add_field_to_token(&$node, $field, $value) {
+
+  if ($value) {
+    $node->fmtoken .= $field->name . ': ' . $value . "\n";
+  }
+}
+
+
+
+
+
+/**
  * Deletes a single FileMaker record.
  */
 function filemaker_delete_record($node, $fmid) {
@@ -1384,10 +1395,13 @@ function filemaker_update_record($node, $fmid, &$form_state) {
   // Loop through fields, setting each one in the FileMaker EditCommand object.
   $fields_sql = "SELECT name, widget FROM {filemaker_field} WHERE nid = %d ORDER BY weight, fmfid";
   $fields_result = db_query($fields_sql, $node->nid);
-  while ($data = db_fetch_object($fields_result)) {
+  while ($field = db_fetch_object($fields_result)) {
 
     // Prepare data to be written to FileMaker.
-    filemaker_format_all($data, $form_state, $record);
+    filemaker_format_all($field, $form_state, $record);
+      
+    // Add field to our FileMaker token if we have a value.
+    filemaker_add_field_to_token($node, $field, $form_state['values'][$field->name]);
   }
 
   // Update record.
