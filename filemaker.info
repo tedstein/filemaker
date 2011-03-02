@@ -1,4 +1,3 @@
-; $Id$
 name = FileMaker
 description = Create and manage nodes that interact with FileMaker databases.
 core = 6.x
