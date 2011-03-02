@@ -547,7 +547,7 @@ function filemaker_create_tab($node) {
  *
  * The portal itself is displayed when editing a FileMaker record in browse mode.
  */
-function filemaker_portals_tab($node, $tab = NULL, $fmid = NULL, $delete = NULL) {
+function filemaker_portals_tab($node, $fmid = NULL, $delete = NULL) {
 
   // Layout selected? If not, send back to the layout tab.
   if (!$node->layout) {
