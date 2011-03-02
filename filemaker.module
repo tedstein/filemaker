@@ -54,7 +54,7 @@ function filemaker_menu() {
     'page arguments' => array(1),
     'description' => 'FileMaker Webform',
     'access callback' => 'filemaker_tab_access',
-    'access arguments' => array('layout mode'),
+    'access arguments' => array('layout mode', 1),
     'type' => MENU_LOCAL_TASK,
   );
 
@@ -65,7 +65,7 @@ function filemaker_menu() {
     'page callback' => 'filemaker_portals_tab',
     'page arguments' => array(1),
     'access callback' => 'filemaker_tab_access',
-    'access arguments' => array('layout mode'),
+    'access arguments' => array('layout mode', 1),
     'type' => MENU_LOCAL_TASK,
   );
 
@@ -76,7 +76,7 @@ function filemaker_menu() {
     'page callback' => 'filemaker_find_tab',
     'page arguments' => array(1),
     'access callback' => 'filemaker_tab_access',
-    'access arguments' => array('browse and find mode'),
+    'access arguments' => array('browse and find mode', 1),
     'type' => MENU_LOCAL_TASK,
     'weight' => 200,
   );
@@ -88,7 +88,7 @@ function filemaker_menu() {
     'page callback' => 'filemaker_browse_tab',
     'page arguments' => array(1),
     'access callback' => 'filemaker_tab_access',
-    'access arguments' => array('browse and find mode'),
+    'access arguments' => array('browse and find mode', 1),
     'type' => MENU_LOCAL_TASK,
     'weight' => 200,
   );
@@ -100,7 +100,7 @@ function filemaker_menu() {
     'page callback' => 'filemaker_layout_tab',
     'page arguments' => array(1),
     'access callback' => 'filemaker_tab_access',
-    'access arguments' => array('layout mode'),
+    'access arguments' => array('layout mode', 1),
     'type' => MENU_LOCAL_TASK,
     'weight' => 200,
   );
@@ -112,7 +112,7 @@ function filemaker_menu() {
     'page callback' => 'filemaker_create_tab',
     'page arguments' => array(1),
     'access callback' => 'filemaker_tab_access',
-    'access arguments' => array('create mode'),
+    'access arguments' => array('create mode', 1),
     'type' => MENU_LOCAL_TASK,
     'weight' => 200,
   );
@@ -1868,10 +1868,9 @@ function filemaker_load_api() {
 /**
  * Checks user access for a tab on a FileMaker node.
  */
-function filemaker_tab_access($permission) {
+function filemaker_tab_access($permission, $node) {
 
   global $user;
-  $node = node_load(arg(1));
 
   // Tab should only appear on FileMaker nodes for users with appropriate permissions.
   if ($node->type == 'filemaker') {
