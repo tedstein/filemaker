@@ -47,10 +47,11 @@ function filemaker_menu() {
   );
 
   // FileMaker fields tab, attached to filemaker nodes.
-  $items['node/%/layout/fields'] = array(
+  $items['node/%node/layout/fields'] = array(
     'parent' => 'node/%/layout',
     'title' => 'FileMaker fields',
     'page callback' => 'filemaker_fields_tab',
+    'page arguments' => array(1),
     'description' => 'FileMaker Webform',
     'access callback' => 'filemaker_tab_access',
     'access arguments' => array('layout mode'),
@@ -58,20 +59,22 @@ function filemaker_menu() {
   );
 
   // FileMaker portals tab, attached to filemaker nodes.
-  $items['node/%/layout/portals'] = array(
+  $items['node/%node/layout/portals'] = array(
     'title' => 'FileMaker portals',
     'description' => 'FileMaker Portals',
     'page callback' => 'filemaker_portals_tab',
+    'page arguments' => array(1),
     'access callback' => 'filemaker_tab_access',
     'access arguments' => array('layout mode'),
     'type' => MENU_LOCAL_TASK,
   );
 
   // FileMaker find tab, attached to filemaker nodes.
-  $items['node/%/find'] = array(
+  $items['node/%node/find'] = array(
     'title' => 'Find Mode',
     'description' => 'FileMaker Find Mode',
     'page callback' => 'filemaker_find_tab',
+    'page arguments' => array(1),
     'access callback' => 'filemaker_tab_access',
     'access arguments' => array('browse and find mode'),
     'type' => MENU_LOCAL_TASK,
@@ -79,10 +82,11 @@ function filemaker_menu() {
   );
 
   // FileMaker browse tab, attached to filemaker nodes.
-  $items['node/%/browse'] = array(
+  $items['node/%node/browse'] = array(
     'title' => 'Browse Mode',
     'description' => 'FileMaker Browse Mode',
     'page callback' => 'filemaker_browse_tab',
+    'page arguments' => array(1),
     'access callback' => 'filemaker_tab_access',
     'access arguments' => array('browse and find mode'),
     'type' => MENU_LOCAL_TASK,
@@ -90,21 +94,23 @@ function filemaker_menu() {
   );
 
   // FileMaker layout tab, attached to filemaker nodes.
-  $items['node/%/layout'] = array(
+  $items['node/%node/layout'] = array(
     'title' => 'Layout Mode',
     'description' => 'FileMaker layout mode',
+    'page callback' => 'filemaker_layout_tab',
+    'page arguments' => array(1),
     'access callback' => 'filemaker_tab_access',
     'access arguments' => array('layout mode'),
-    'page callback' => 'filemaker_layout_tab',
     'type' => MENU_LOCAL_TASK,
     'weight' => 200,
   );
 
   // FileMaker create tab, attached to filemaker nodes.
-  $items['node/%/create'] = array(
+  $items['node/%node/create'] = array(
     'title' => 'Create Mode',
     'description' => 'FileMaker Create Mode',
     'page callback' => 'filemaker_create_tab',
+    'page arguments' => array(1),
     'access callback' => 'filemaker_tab_access',
     'access arguments' => array('create mode'),
     'type' => MENU_LOCAL_TASK,
@@ -499,14 +505,11 @@ function filemaker_access($op, $node, $account) {
  *
  * Form to select a FileMaker layout for the node to be based on.
  */
-function filemaker_layout_tab() {
-
-  $nid = arg(1);
-  $node = node_load($nid);
+function filemaker_layout_tab($node) {
 
   // Send user to fields tab if the node already has a layout.
   if ($node->layout) {
-    $redirect_path = 'node/' . $nid . '/layout/fields';
+    $redirect_path = 'node/' . $node->nid . '/layout/fields';
     drupal_goto($redirect_path);
   }
 
@@ -528,7 +531,7 @@ function filemaker_layout_tab() {
  *
  * Form to create new FileMaker records.
  */
-function filemaker_create_tab() {
+function filemaker_create_tab($node) {
 
   return drupal_get_form('filemaker_record_form');
 }
@@ -544,17 +547,11 @@ function filemaker_create_tab() {
  *
  * The portal itself is displayed when editing a FileMaker record in browse mode.
  */
-function filemaker_portals_tab() {
-
-  $nid = arg(1);
-  $fmpid = arg(4);
-  $delete = arg(5);
-
-  $node = node_load($nid);
+function filemaker_portals_tab($node, $tab = NULL, $fmid = NULL, $delete = NULL) {
 
   // Layout selected? If not, send back to the layout tab.
   if (!$node->layout) {
-    drupal_goto('node/' . $nid . '/layout');
+    drupal_goto('node/' . $node->nid . '/layout');
   }
 
   // If delete, then delete record of field and recall this page without the the fmpid or delete arguments.
@@ -572,7 +569,7 @@ function filemaker_portals_tab() {
 
   // If not delete, or if delete called this page, then add table of portals and form to add or edit portal.
   else {
-    $output = filemaker_portals_table($nid);
+    $output = filemaker_portals_table($node->nid);
     $output .= drupal_get_form('filemaker_portal_form');
   }
 
@@ -589,14 +586,9 @@ function filemaker_portals_tab() {
  * Displays a found set of FileMaker records and, optionally a form to edit a single FileMaker
  * record, as well as all portals displaying data related to the record being edited.
  */
-function filemaker_browse_tab() {
+function filemaker_browse_tab($node, $fmid = NULL, $delete = NULL) {
 
-  $nid = arg(1);
-  $tab = arg(2);
-  $fmid = arg(3);
-  $delete = arg(4);
-
-  $node = node_load($nid);
+  $tab = 'browse';
 
   // Normal Drupal node view. Need a found set.
   if (empty($tab)) {
@@ -623,7 +615,7 @@ function filemaker_browse_tab() {
       $output .= drupal_get_form('filemaker_record_form');
 
       // Portals for this node.
-      $portals = filemaker_get_portals($nid);
+      $portals = filemaker_get_portals($node);
       if ($portals) {
         $output .= '<h2>Portals</h2>';
         $output .= $portals;
@@ -632,7 +624,7 @@ function filemaker_browse_tab() {
   }
 
   // We always need a found set of records.
-  $output .= filemaker_found_set($nid);
+  $output .= filemaker_found_set($node->nid);
 
   return $output;
 }
@@ -646,7 +638,7 @@ function filemaker_browse_tab() {
  *
  * Form to search a FileMaker layout.
  */
-function filemaker_find_tab() {
+function filemaker_find_tab($node) {
 
   return drupal_get_form('filemaker_record_form');
 }
@@ -658,19 +650,13 @@ function filemaker_find_tab() {
 /**
  * Page callback for the 'FileMaker fields' tab on a filemaker node.
  */
-function filemaker_fields_tab() {
-
-  $nid = arg(1);
-  $fmfid = arg(4);
-  $delete = arg(5);
-
-  $node = node_load($nid);
+function filemaker_fields_tab($node, $fmid = NULL, $delete = NULL) {
 
   $output = '';
 
   // Layout selected? If not, send back to the layout tab.
   if (!$node->layout) {
-    drupal_goto('node/' . $nid . '/layout');
+    drupal_goto('node/' . $node->nid . '/layout');
   }
 
   // If delete, then delete record of field and recall this page without the the fmfid or delete arguments.
@@ -682,7 +668,7 @@ function filemaker_fields_tab() {
     drupal_set_message(t('FileMaker field deleted from FileMaker node.'));
 
     // Redirect to this page without the fmfid.
-    $return_path = 'node/' . $nid . '/layout/fields';
+    $return_path = 'node/' . $node->nid . '/layout/fields';
     drupal_goto($return_path);
   }
 
@@ -691,7 +677,7 @@ function filemaker_fields_tab() {
     $output .= drupal_get_form('filemaker_field_form');
   }
 
-  $output .= filemaker_fields_tab_table($nid);
+  $output .= filemaker_fields_tab_table($node->nid);
 
   return $output;
 }
@@ -1456,15 +1442,15 @@ function filemaker_portals_table($nid) {
 /**
  * Attaches all of the portals that have been added to a FileMaker node.
  */
-function filemaker_get_portals($nid) {
+function filemaker_get_portals($node) {
 
   $sql = "SELECT fmpid, name FROM {filemaker_portal} WHERE nid = %d";
-  $result = db_query($sql, $nid);
+  $result = db_query($sql, $node->nid);
 
   $output = '';
 
   while ($data = db_fetch_object($result)) {
-    $output .= filemaker_get_portal($nid, $data->name);
+    $output .= filemaker_get_portal($node, $data->name);
   }
 
   return $output;
@@ -1477,10 +1463,9 @@ function filemaker_get_portals($nid) {
 /**
  * Returns a single portal to attach to a FileMaker node.
  */
-function filemaker_get_portal($nid, $portal_name) {
+function filemaker_get_portal($node, $portal_name) {
 
   $fmid = arg(3);
-  $node = node_load($nid);
 
   $fm = filemaker_filemaker_object($node->fmcid); // FileMaker object.
 
