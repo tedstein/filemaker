@@ -427,6 +427,15 @@ function filemaker_form($node) {
     '#weight' => 5,
   );
 
+  // Layout, as a hidden field.
+  // The layout is updated via the layout tab.
+  $form['layout'] = array(
+    '#type' => 'hidden',
+    '#required' => FALSE,
+    '#default_value' => isset($node->layout) ? $node->layout : '',
+    '#weight' => 5,
+  );
+
   return $form;
 }
 
@@ -493,6 +502,7 @@ function filemaker_delete($node) {
  * Implementation of hook_update().
  */
 function filemaker_update($node) {
+
   if ($node->revision) {
     filemaker_insert($node);
   }
@@ -547,10 +557,9 @@ function filemaker_layout_tab($node) {
   }
 
   // Display form for user to select layout for the node.
-  else {
-    drupal_set_message(t('You must select a layout before you can add fields or portals.'));
-    $output .= drupal_get_form('filemaker_layout_form', $node);
-  }
+  drupal_set_message(t('You must select a layout before you can add fields or portals.'));
+  $output .= drupal_get_form('filemaker_layout_form', $node);
+
   return $output;
 }
 
@@ -598,7 +607,7 @@ function filemaker_browse_tab($node, $fmid = NULL, $delete = NULL) {
     filemaker_default_find($node);
   }
 
-  // If there is a record to edit, either delete or get form and portals.
+  // If there is a record to edit, get form and portals.
   if ($fmid) {
 
     // Form to edit FileMaker record.
@@ -880,8 +889,7 @@ function filemaker_record_form($form_state, $node, $tab = NULL, $fmid = NULL) {
  */
 function filemaker_find_submit(&$form, &$form_state) {
 
-  $nid = $form_state['values']['nid'];
-  $node = node_load($nid);
+  $node = node_load($form_state['values']['nid']);
 
   // Create FileMaker_Command_Find object.
   $fm = filemaker_filemaker_object($node->fmcid);
@@ -897,7 +905,7 @@ function filemaker_find_submit(&$form, &$form_state) {
   }
 
   // Store find request in session so that we can perform a new find to recreate the found set if record in it is edited or deleted.
-  $_SESSION['filemaker'][$nid]['foundset']['request'] = serialize($request);
+  $_SESSION['filemaker'][$node->nid]['foundset']['request'] = serialize($request);
 
   filemaker_perform_find($node);
 }
@@ -967,7 +975,7 @@ function filemaker_create_submit(&$form, &$form_state) {
 
     drupal_set_message(t('Record saved to FileMaker.'));
 
-    // Fire off the create hook.
+    // Fire off the create trigger.
     module_invoke_all('filemaker', 'create', $node);
 
     // If record saved, update found set so new record is included.
@@ -1475,7 +1483,7 @@ function filemaker_update_record($node, $fmid, &$form_state) {
   $fm = filemaker_filemaker_object($node->fmcid);
   $record = $fm->newEditCommand($node->layout, $fmid);
 
-  // Loop through fields, setting each one in the FileMaker EditCommand object.
+  // Loop through fields, setting each one in the FileMaker_EditCommand object.
   $fields_sql = "SELECT name, widget FROM {filemaker_field} WHERE nid = %d ORDER BY weight, fmfid";
   $fields_result = db_query($fields_sql, $node->nid);
   while ($field = db_fetch_object($fields_result)) {
@@ -1497,7 +1505,7 @@ function filemaker_update_record($node, $fmid, &$form_state) {
 
   else {
 
-    // Fire off the update hook.
+    // Fire off the update trigger.
     module_invoke_all('filemaker', 'update', $node);
 
     drupal_set_message(t('Record saved to FileMaker.'));
@@ -1801,7 +1809,7 @@ function filemaker_fields_tab_table($nid) {
  *
  * Retrieves a FileMaker_Command_Find object from the $_SESSION of the user.
  *
- * Doesn't return a vaule, but updates the found set in the $_SESSSION, which is used in 'Browse mode'.
+ * Doesn't return a value, but updates the found set in the $_SESSSION, which is used in 'Browse mode'.
  */
 function filemaker_perform_find($node) {
 
@@ -1845,8 +1853,11 @@ function filemaker_perform_find($node) {
   }
   $head[] = t('Actions');
 
+  dsm('layout: ' . $node->layout);
+  dsm($request);
   // Perform the find.
   $result = $request->execute();
+  dsm($result);
 
   if (filemaker_is_error($result)) return;
 
