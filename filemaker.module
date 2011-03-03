@@ -1853,11 +1853,8 @@ function filemaker_perform_find($node) {
   }
   $head[] = t('Actions');
 
-  dsm('layout: ' . $node->layout);
-  dsm($request);
   // Perform the find.
   $result = $request->execute();
-  dsm($result);
 
   if (filemaker_is_error($result)) return;
 
