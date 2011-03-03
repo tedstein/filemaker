@@ -58,6 +58,17 @@ function filemaker_menu() {
     'type' => MENU_LOCAL_TASK,
   );
 
+  // FileMaker fields tab, delete.
+  $items['node/%node/layout/fields/%/delete'] = array(
+    'title' => 'Confirm Deletion of FileMaker field.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('filemaker_delete_form', 1, 'field', 4),
+    'access callback' => 'filemaker_tab_access',
+    'access arguments' => array('layout mode', 1),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 200,
+  );
+
   // FileMaker portals tab, attached to filemaker nodes.
   $items['node/%node/layout/portals'] = array(
     'title' => 'FileMaker portals',
@@ -69,14 +80,13 @@ function filemaker_menu() {
     'type' => MENU_LOCAL_TASK,
   );
 
-  // FileMaker find tab, attached to filemaker nodes.
-  $items['node/%node/find'] = array(
-    'title' => 'Find Mode',
-    'description' => 'FileMaker Find Mode',
+  // FileMaker portals tab, delete.
+  $items['node/%node/layout/portals/%/delete'] = array(
+    'title' => 'Confirm Deletion of FileMaker portal.',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('filemaker_record_form', 1, 'find'),
+    'page arguments' => array('filemaker_delete_form', 1, 'portal', 4),
     'access callback' => 'filemaker_tab_access',
-    'access arguments' => array('browse and find mode', 1),
+    'access arguments' => array('layout mode', 1),
     'type' => MENU_LOCAL_TASK,
     'weight' => 200,
   );
@@ -87,6 +97,29 @@ function filemaker_menu() {
     'description' => 'FileMaker Browse Mode',
     'page callback' => 'filemaker_browse_tab',
     'page arguments' => array(1),
+    'access callback' => 'filemaker_tab_access',
+    'access arguments' => array('browse and find mode', 1),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 200,
+  );
+
+  // FileMaker browse tab, delete.
+  $items['node/%node/browse/%/delete'] = array(
+    'title' => 'Confirm Deletion of FileMaker record.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('filemaker_delete_form', 1, 'record', 3),
+    'access callback' => 'filemaker_tab_access',
+    'access arguments' => array('browse and find mode', 1),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 200,
+  );
+
+  // FileMaker find tab, attached to filemaker nodes.
+  $items['node/%node/find'] = array(
+    'title' => 'Find Mode',
+    'description' => 'FileMaker Find Mode',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('filemaker_record_form', 1, 'find'),
     'access callback' => 'filemaker_tab_access',
     'access arguments' => array('browse and find mode', 1),
     'type' => MENU_LOCAL_TASK,
@@ -376,7 +409,6 @@ function filemaker_form($node) {
       '#title' => t('No FileMaker database connections.'),
       '#value' => $connections_link,
       '#weight' => 5,
-      '#maxlength' => 3,
     );
   }
 
@@ -540,24 +572,9 @@ function filemaker_portals_tab($node, $fmid = NULL, $delete = NULL) {
     drupal_goto('node/' . $node->nid . '/layout');
   }
 
-  // If delete, then delete record of field and recall this page without the the fmpid or delete arguments.
-  if ($delete == 'delete') {
-
-    // Delete record.
-    $sql = "DELETE FROM {filemaker_portal} WHERE fmpid = %d";
-    $result = db_query($sql, $fmpid);
-    drupal_set_message(t('FileMaker portal deleted from FileMaker node.'));
-
-    // Redirect to this page without the fmpid.
-    $return_path = 'node/' . $node->nid . '/layout/protals';
-    drupal_goto($return_path);
-  }
-
-  // If not delete, or if delete called this page, then add table of portals and form to add or edit portal.
-  else {
-    $output = filemaker_portals_table($node->nid);
-    $output .= drupal_get_form('filemaker_portal_form', $node);
-  }
+  // Add table of portals and form to add or edit portal.
+  $output = filemaker_portals_table($node->nid);
+  $output .= drupal_get_form('filemaker_portal_form', $node);
 
   return $output;
 }
@@ -584,28 +601,15 @@ function filemaker_browse_tab($node, $fmid = NULL, $delete = NULL) {
   // If there is a record to edit, either delete or get form and portals.
   if ($fmid) {
 
-    // Delete?
-    if ($delete == 'delete') {
+    // Form to edit FileMaker record.
+    $output .= '<h2>Edit Chosen Record</h2>';
+    $output .= drupal_get_form('filemaker_record_form', $node, 'browse', $fmid);
 
-      filemaker_delete_record($node, $fmid);
-
-      // Reload this tab with new found set.
-      drupal_goto('node/' . $node->nid . '/' . 'browse');
-    }
-
-    // Not deleting, so get form and portals.
-    else {
-
-      // Form to edit FileMaker record.
-      $output .= '<h2>Edit Chosen Record</h2>';
-      $output .= drupal_get_form('filemaker_record_form', $node, 'browse', $fmid);
-
-      // Portals for this node.
-      $portals = filemaker_get_portals($node, $fmid);
-      if ($portals) {
-        $output .= '<h2>Portals</h2>';
-        $output .= $portals;
-      }
+    // Portals for this node.
+    $portals = filemaker_get_portals($node, $fmid);
+    if ($portals) {
+      $output .= '<h2>Portals</h2>';
+      $output .= $portals;
     }
   }
 
@@ -631,24 +635,10 @@ function filemaker_fields_tab($node, $fmfid = NULL, $delete = NULL) {
     drupal_goto('node/' . $node->nid . '/layout');
   }
 
-  // If delete, then delete record of field and recall this page without the the fmfid or delete arguments.
-  if ($delete == 'delete') {
+  // Add form.
+  $output .= drupal_get_form('filemaker_field_form', $node, $fmfid);
 
-    // Delete record.
-    $sql = "DELETE FROM {filemaker_field} WHERE fmfid = %d";
-    $result = db_query($sql, $fmfid);
-    drupal_set_message(t('FileMaker field deleted from FileMaker node.'));
-
-    // Redirect to this page without the fmfid.
-    $return_path = 'node/' . $node->nid . '/layout/fields';
-    drupal_goto($return_path);
-  }
-
-  // If not delete, or if delete called this page, then add form.
-  else {
-    $output .= drupal_get_form('filemaker_field_form', $node, $fmfid);
-  }
-
+  // Add table of fields.
   $output .= filemaker_fields_tab_table($node->nid);
 
   return $output;
@@ -669,11 +659,125 @@ function filemaker_fields_tab($node, $fmfid = NULL, $delete = NULL) {
 
 
 /**
+ * Callback for the filemaker_delete_form.
+ *
+ * Deletes either one of the following:
+ *  - FileMaker record.
+ *  - Portal, added in layout mode.
+ *  - Field, added in layout mode.
+ * 
+ * @param $what
+ *  A string saying what to delete: record, field, or portal.
+ * @param $id
+ *  The id of the thing that is being deleted: fmid, fmfid, or fmpid.
+ */
+function filemaker_delete_form($form_state, $node, $what, $id) {
+
+  $form = array();
+  $form['#submit'][] = 'filemaker_delete_form_submit';
+
+  switch ($what) {
+
+    case 'record':
+      $confirm_text = 'Delete this FileMaker record?';
+      $submit_button = 'Delete Record';
+      $callback_arguments = array($node, $id);
+      $form['#redirect'][] = 'node/' . $node->nid . '/browse';
+      break;
+
+    case 'field':
+      $confirm_text = 'Remove this field from your layout?';
+      $submit_button = 'Delete Field';
+      $callback_arguments = array($node, $id);
+      $form['#redirect'][] = 'node/' . $node->nid . '/layout/fields';
+      break;
+
+    case 'portal':
+      $confirm_text = 'Remove this portal from your layout?';
+      $submit_button = 'Delete Portal';
+      $callback_arguments = array($node, $id);
+      $form['#redirect'][] = 'node/' . $node->nid . '/layout/portals';
+      break;
+
+
+  }
+
+  // Store nid.
+  $form['filemaker']['nid'] = array(
+    '#type' => 'hidden',
+    '#value' => $node->nid,
+  );
+
+  // Store id.
+  $form['filemaker']['id'] = array(
+    '#type' => 'hidden',
+    '#value' => $id,
+  );
+
+  // Create filemaker field fieldset.
+  $form['fmnode'] = array(
+    '#title' => t('Confirm Deletion'),
+    '#type' => 'fieldset',
+  );
+
+  // Markup.
+  $form['fmnode']['markup'] = array(
+    '#type' => 'markup',
+    '#title' => t('Confirm Deletion'),
+    '#value' => $confirm_text,
+  );
+
+  // Submit button.
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => $submit_button,
+    '#weight' => 50,
+  );
+
+  return $form;
+}
+
+
+
+
+
+/**
+ * Submit function for filemaker_delete_form: FileMaker record.
+ */
+function filemaker_delete_form_submit(&$form, &$form_state) {
+
+  switch ($form_state['values']['op']) {
+
+    case 'Delete Record':
+      $node = node_load($form_state['values']['nid']);
+      filemaker_delete_record($node, $form_state['values']['id']);
+      break;
+
+    case 'Delete Field':
+      filemaker_delete_field($form_state['values']['id']); 
+      break;
+
+    case 'Delete Portal':
+      filemaker_delete_portal($form_state['values']['id']);
+      break;
+  }
+}
+
+
+
+
+
+/**
  * Callback for the filemaker_record_form.
  *
  * Creates a form to find, edit, or add a FileMaker record.
  */
 function filemaker_record_form($form_state, $node, $tab = NULL, $fmid = NULL) {
+
+  dsm($form_state);
+  dsm($node);
+  dsm($tab);
+  dsm($fmid);
 
   $fm = filemaker_filemaker_object($node->fmcid); // FileMaker object.
 
@@ -711,6 +815,14 @@ function filemaker_record_form($form_state, $node, $tab = NULL, $fmid = NULL) {
     '#type' => 'hidden',
     '#value' => $node->nid,
   );
+
+  // Store fmid
+  if ($fmid) {
+    $form['filemaker']['fmid'] = array(
+      '#type' => 'hidden',
+      '#value' => $fmid,
+    );
+  }
 
   // Create filemaker field fieldset.
   $form['fmnode'] = array(
@@ -802,7 +914,7 @@ function filemaker_find_submit(&$form, &$form_state) {
  */
 function filemaker_browse_submit(&$form, &$form_state) {
 
-  $fmid = arg(3);
+  $fmid = $form_state['values']['fmid'];
   $node = node_load($form_state['values']['nid']);
 
   filemaker_update_record($node, $fmid, $form_state);
@@ -1065,6 +1177,12 @@ function filemaker_field_form($form_state, $node, $fmfid) {
     '#value' => $mode,
   );
 
+  // Store the nid.
+  $form['filemaker']['nid'] = array(
+    '#type' => 'hidden',
+    '#value' => $node->nid,
+  );
+
   // Store the $fmfid, so we know which field to update.
   $form['filemaker']['fmfid'] = array(
     '#type' => 'hidden',
@@ -1146,7 +1264,7 @@ function filemaker_field_form($form_state, $node, $fmfid) {
  */
 function filemaker_field_submit(&$form, &$form_state) {
 
-  $node = node_load(arg(1));
+  $node = node_load($form_state['values']['nid']);
 
   $mode = $form_state['values']['mode'];
 
@@ -1251,9 +1369,6 @@ function filemaker_default_find($node) {
  */
 function filemaker_add_field_to_token(&$node, $field, $value) {
 
-  $field = check_plain($field);
-  $value = check_plain($value);
-
   if ($value) {
     $node->fmtoken .= $field->name . ': ' . $value . "\n";
   }
@@ -1283,6 +1398,36 @@ function filemaker_delete_record($node, $fmid) {
     }
   }
 }
+
+
+
+
+
+/**
+ * Deletes a single FileMaker field.
+ */
+function filemaker_delete_field($fmfid) {
+
+  $sql = "DELETE FROM {filemaker_field} WHERE fmfid = %d";
+  $result = db_query($sql, $fmfid);
+
+  drupal_set_message(t('FileMaker field deleted from FileMaker node.'));
+}
+
+
+
+
+/**
+ * Deletes a single FileMaker portal.
+ */
+function filemaker_delete_portal($fmpid) {
+
+  $sql = "DELETE FROM {filemaker_portal} WHERE fmpid = %d";
+  $result = db_query($sql, $fmpid);
+
+  drupal_set_message(t('FileMaker portal deleted from FileMaker node.'));
+}
+
 
 
 
@@ -1459,8 +1604,8 @@ function filemaker_get_portal($node, $portal_name, $fmid) {
   }
 
   // Format field names for table headers.
-  foreach ($field_names as $field) {
-    $head[] = filemaker_format_field_name($field);
+  foreach ($field_names as $field_name) {
+    $head[] = filemaker_format_field_name($field_name);
   }
 
   return theme_table($head, $rows);
