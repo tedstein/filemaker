@@ -516,7 +516,7 @@ function filemaker_layout_tab($node) {
   // Display form for user to select layout for the node.
   else {
     drupal_set_message(t('You must select a layout before you can add fields or portals.'));
-    $output .= drupal_get_form('filemaker_layout_form');
+    $output .= drupal_get_form('filemaker_layout_form', $node);
   }
   return $output;
 }
@@ -563,14 +563,14 @@ function filemaker_portals_tab($node, $fmid = NULL, $delete = NULL) {
     drupal_set_message(t('FileMaker portal deleted from FileMaker node.'));
 
     // Redirect to this page without the fmpid.
-    $return_path = arg(0) . '/'. arg(1) . '/'. arg(2) . '/' . arg(3);
+    $return_path = 'node/' . $node->nid . '/layout/protals';
     drupal_goto($return_path);
   }
 
   // If not delete, or if delete called this page, then add table of portals and form to add or edit portal.
   else {
     $output = filemaker_portals_table($node->nid);
-    $output .= drupal_get_form('filemaker_portal_form');
+    $output .= drupal_get_form('filemaker_portal_form', $node);
   }
 
   return $output;
@@ -615,7 +615,7 @@ function filemaker_browse_tab($node, $fmid = NULL, $delete = NULL) {
       $output .= drupal_get_form('filemaker_record_form', $node, 'browse', $fmid);
 
       // Portals for this node.
-      $portals = filemaker_get_portals($node);
+      $portals = filemaker_get_portals($node, $fmid);
       if ($portals) {
         $output .= '<h2>Portals</h2>';
         $output .= $portals;
@@ -650,7 +650,7 @@ function filemaker_find_tab($node) {
 /**
  * Page callback for the 'FileMaker fields' tab on a filemaker node.
  */
-function filemaker_fields_tab($node, $fmid = NULL, $delete = NULL) {
+function filemaker_fields_tab($node, $fmfid = NULL, $delete = NULL) {
 
   $output = '';
 
@@ -674,7 +674,7 @@ function filemaker_fields_tab($node, $fmid = NULL, $delete = NULL) {
 
   // If not delete, or if delete called this page, then add form.
   else {
-    $output .= drupal_get_form('filemaker_field_form');
+    $output .= drupal_get_form('filemaker_field_form', $node, $fmfid);
   }
 
   $output .= filemaker_fields_tab_table($node->nid);
@@ -701,14 +701,7 @@ function filemaker_fields_tab($node, $fmid = NULL, $delete = NULL) {
  *
  * Creates a form to find, edit, or add a FileMaker record.
  */
-function filemaker_record_form($form_state, $node, $tab, $fmid = NULL) {
-
-  dsm('node');
-  dsm($node);
-  dsm('tab');
-  dsm($tab);
-  dsm('fmid');
-  dsm($fmid);
+function filemaker_record_form($form_state, $node, $tab = NULL, $fmid = NULL) {
 
   $fm = filemaker_filemaker_object($node->fmcid); // FileMaker object.
 
@@ -763,16 +756,16 @@ function filemaker_record_form($form_state, $node, $tab, $fmid = NULL) {
     switch ($tab) {
 
       case 'create':
-        $form['fmnode'][$data->name] = filemaker_field_for_form_array($data->name, $data->label, $data->widget, $data->default_value, $data->required);
+        $form['fmnode'][$data->name] = filemaker_field_for_form_array($node, $data->name, $data->label, $data->widget, $data->default_value, $data->required);
         break;
 
       case 'find':
-        $form['fmnode'][$data->name] = filemaker_field_for_form_array($data->name, $data->label, 'textfield', $data->default_value, FALSE);
+        $form['fmnode'][$data->name] = filemaker_field_for_form_array($node, $data->name, $data->label, 'textfield', $data->default_value, FALSE);
         break;
 
       case 'browse':
         $record_data = check_plain($filemaker_record->getField($data->name));
-        $form['fmnode'][$data->name] = filemaker_field_for_form_array($data->name, $data->label, $data->widget, $record_data, $data->required);
+        $form['fmnode'][$data->name] = filemaker_field_for_form_array($node, $data->name, $data->label, $data->widget, $record_data, $data->required);
         break;
 
     }
@@ -823,7 +816,7 @@ function filemaker_find_submit(&$form, &$form_state) {
   // Store find request in session so that we can perform a new find to recreate the found set if record in it is edited or deleted.
   $_SESSION['filemaker'][$nid]['foundset']['request'] = serialize($request);
 
-  filemaker_perform_find($nid);
+  filemaker_perform_find($node);
 }
 
 
@@ -838,14 +831,12 @@ function filemaker_find_submit(&$form, &$form_state) {
 function filemaker_browse_submit(&$form, &$form_state) {
 
   $fmid = arg(3);
-  $nid = $form_state['values']['nid'];
-
-  $node = node_load($nid);
+  $node = node_load($form_state['values']['nid']);
 
   filemaker_update_record($node, $fmid, $form_state);
 
   // Reload the current page, minus the form, to display new found set.
-  drupal_goto('node/' . $nid . '/browse');
+  drupal_goto('node/' . $node->nid . '/browse');
 }
 
 
@@ -897,7 +888,7 @@ function filemaker_create_submit(&$form, &$form_state) {
     module_invoke_all('filemaker', 'create', $node);
 
     // If record saved, update found set so new record is included.
-    filemaker_perform_find($nid);
+    filemaker_perform_find($node);
   }
 }
 
@@ -907,10 +898,7 @@ function filemaker_create_submit(&$form, &$form_state) {
 /**
  * Form to choose layout for a filemaker node.
  */
-function filemaker_layout_form() {
-
-  $nid = arg(1);
-  $node = node_load($nid);
+function filemaker_layout_form($form_state, $node) {
 
   // Exit if there is no FileMaker connection.
   if (!$node->fmcid) {
@@ -926,7 +914,7 @@ function filemaker_layout_form() {
   // Store nid.
   $form['filemaker']['nid'] = array(
       '#type' => 'hidden',
-      '#value' => $nid,
+      '#value' => $node->nid,
   );
 
   // Get $options array of layouts for the current connection.
@@ -979,10 +967,7 @@ function filemaker_layout_submit(&$form, &$form_state) {
 /**
  * Form to add portals to a FileMaker node.
  */
-function filemaker_portal_form() {
-
-  $nid = arg(1);
-  $node = node_load($nid);
+function filemaker_portal_form($form_state, $node) {
 
   $fm = filemaker_filemaker_object($node->fmcid); // FileMaker object.
 
@@ -1003,7 +988,7 @@ function filemaker_portal_form() {
     // Store nid.
     $form['filemaker']['nid'] = array(
       '#type' => 'hidden',
-      '#value' => $nid,
+      '#value' => $node->nid,
     );
 
     // Create filemaker portal fieldset.
@@ -1065,13 +1050,7 @@ function filemaker_portal_submit(&$form, &$form_state) {
  * A FileMaker node can have n number of FileMaker fields, but they are limited to the fields on the
  * FileMaker layout that the node is based on.
  */
-function filemaker_field_form() {
-
-  // FileMaker node.
-  $nid = arg(1);
-  $fmfid = arg(4);
-
-  $node = node_load($nid);
+function filemaker_field_form($form_state, $node, $fmfid) {
 
   // Updating or inserting?
   if ($fmfid) {
@@ -1288,7 +1267,7 @@ function filemaker_default_find($node) {
   // if record is edited, created, or deleted.
   $_SESSION['filemaker'][$node->nid]['foundset']['request'] = serialize($request);
 
-  filemaker_perform_find($node->nid);
+  filemaker_perform_find($node);
 }
 
 
@@ -1328,7 +1307,7 @@ function filemaker_delete_record($node, $fmid) {
 
     // Perform new find, to exclude deleted record from our found set.
     if ($_SESSION['filemaker'][$node->nid]['foundset']['request']) {
-      filemaker_perform_find($node->nid);
+      filemaker_perform_find($node);
     }
   }
 }
@@ -1409,7 +1388,7 @@ function filemaker_update_record($node, $fmid, &$form_state) {
   }
 
   // Perform new find.
-  filemaker_perform_find($node->nid);
+  filemaker_perform_find($node);
 }
 
 
@@ -1443,7 +1422,7 @@ function filemaker_portals_table($nid) {
 /**
  * Attaches all of the portals that have been added to a FileMaker node.
  */
-function filemaker_get_portals($node) {
+function filemaker_get_portals($node, $fmid) {
 
   $sql = "SELECT fmpid, name FROM {filemaker_portal} WHERE nid = %d";
   $result = db_query($sql, $node->nid);
@@ -1451,7 +1430,7 @@ function filemaker_get_portals($node) {
   $output = '';
 
   while ($data = db_fetch_object($result)) {
-    $output .= filemaker_get_portal($node, $data->name);
+    $output .= filemaker_get_portal($node, $data->name, $fmid);
   }
 
   return $output;
@@ -1464,9 +1443,7 @@ function filemaker_get_portals($node) {
 /**
  * Returns a single portal to attach to a FileMaker node.
  */
-function filemaker_get_portal($node, $portal_name) {
-
-  $fmid = arg(3);
+function filemaker_get_portal($node, $portal_name, $fmid) {
 
   $fm = filemaker_filemaker_object($node->fmcid); // FileMaker object.
 
@@ -1610,9 +1587,7 @@ function filemaker_is_error($object) {
  * This function is used for every field created that will directly interact with a
  * FileMaker database.
  */
-function filemaker_field_for_form_array($name, $label, $widget, $default_value, $required = FALSE) {
-
-  $nid = arg(1);
+function filemaker_field_for_form_array($node, $name, $label, $widget, $default_value, $required = FALSE) {
 
   $field = array(
     '#title' => check_plain($label),
@@ -1625,7 +1600,6 @@ function filemaker_field_for_form_array($name, $label, $widget, $default_value, 
   if ($widget == 'select' || $widget == 'radios' || $widget == 'checkboxes') {
 
     // Get value list items from FileMaker.
-    $node = node_load($nid);
     $fm = filemaker_filemaker_object($node->fmcid);  // FileMaker object.
     $layout = $fm->getLayout($node->layout);  // FileMaker_Layout object.
     if (filemaker_is_error($layout)) return;
@@ -1713,16 +1687,14 @@ function filemaker_fields_tab_table($nid) {
  *
  * Doesn't return a vaule, but updates the found set in the $_SESSSION, which is used in 'Browse mode'.
  */
-function filemaker_perform_find($nid) {
+function filemaker_perform_find($node) {
 
   // Don't perform a find if there is no saved find criteria.
-  if (!$_SESSION['filemaker'][$nid]['foundset']['request']) {
+  if (!$_SESSION['filemaker'][$node->nid]['foundset']['request']) {
     return;
   }
 
   $tab = arg(2);
-
-  $node = node_load($nid);
 
   // Might need to load class definition from the API to avoid error when unserializing FileMaker_Command_Find object.
   // We do this by creating an empty FileMaker_Command_Find object.
@@ -1731,7 +1703,7 @@ function filemaker_perform_find($nid) {
 
   // Find out if we can safely unserialize FileMaker_Command_Find object.
   if (class_exists('FileMaker_Command_Find')) {
-    $request = unserialize($_SESSION['filemaker'][$nid]['foundset']['request']);
+    $request = unserialize($_SESSION['filemaker'][$node->nid]['foundset']['request']);
   }
   else {
     drupal_set_message(t('Found set is not updated.'));
@@ -1744,7 +1716,7 @@ function filemaker_perform_find($nid) {
 
   // Get fields added to this FileMaker node.
   $fields_sql = "SELECT name, label, widget FROM {filemaker_field} WHERE nid = %d ORDER BY weight, fmfid";
-  $fields_result = db_query($fields_sql, $nid);
+  $fields_result = db_query($fields_sql, $node->nid);
 
   // Create array of field names to loop through when adding data to table rows.
   $field_names = array();
@@ -1763,11 +1735,11 @@ function filemaker_perform_find($nid) {
   if (filemaker_is_error($result)) return;
 
   // Store find request in session so that we can perform a new find to recreate the found set if record in it is edited or deleted.
-  $_SESSION['filemaker'][$nid]['foundset']['request'] = serialize($request);
+  $_SESSION['filemaker'][$node->nid]['foundset']['request'] = serialize($request);
 
   // Information for the x of n widget.
-  $_SESSION['filemaker'][$nid]['foundset']['foundset_count'] = $result->getFoundSetCount();
-  $_SESSION['filemaker'][$nid]['foundset']['record_count'] = $result->getTableRecordCount();
+  $_SESSION['filemaker'][$node->nid]['foundset']['foundset_count'] = $result->getFoundSetCount();
+  $_SESSION['filemaker'][$node->nid]['foundset']['record_count'] = $result->getTableRecordCount();
 
   // Get the records.
   $records = $result->getRecords();
@@ -1781,15 +1753,15 @@ function filemaker_perform_find($nid) {
     foreach ($field_names as $field_name) {
       $rows[$i][$field_name] = check_plain($record->getField($field_name));
     }
-    $edit_link = l('Edit', 'node/' . $nid . '/browse/' . $record->getRecordId());
-    $delete_link = l('Delete', 'node/' . $nid . '/browse/' . $record->getRecordId() . '/delete');
+    $edit_link = l('Edit', 'node/' . $node->nid . '/browse/' . $record->getRecordId());
+    $delete_link = l('Delete', 'node/' . $node->nid . '/browse/' . $record->getRecordId() . '/delete');
     $rows[$i]['actions'] = $edit_link . ' | ' . $delete_link;
     $i++;
   }
   $results_table = theme_table($head, $rows);
 
   // Store table of foundset in session for browse mode to display.
-  $_SESSION['filemaker'][$nid]['foundset']['table'] = $results_table;
+  $_SESSION['filemaker'][$node->nid]['foundset']['table'] = $results_table;
 
   // Only display success message to user if we initiated find from 'Find mode' tab.
   if ($tab == 'find') {
