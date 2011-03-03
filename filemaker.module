@@ -298,7 +298,7 @@ function filemaker_view($node, $teaser = FALSE, $page = FALSE) {
   // Create mode.
   if ($node->fmview == 'create_mode') {
     $node->content['filemaker'] = array(
-      '#value' => drupal_get_form('filemaker_record_form'),
+      '#value' => drupal_get_form('filemaker_record_form', $node, 'create'),
       '#weight' => 10,
     );
   }
@@ -533,7 +533,7 @@ function filemaker_layout_tab($node) {
  */
 function filemaker_create_tab($node) {
 
-  return drupal_get_form('filemaker_record_form');
+  return drupal_get_form('filemaker_record_form', $node, 'create');
 }
 
 
@@ -588,7 +588,7 @@ function filemaker_portals_tab($node, $fmid = NULL, $delete = NULL) {
  */
 function filemaker_browse_tab($node, $fmid = NULL, $delete = NULL) {
 
-  $tab = 'browse';
+  $tab = arg(2);
 
   // Normal Drupal node view. Need a found set.
   if (empty($tab)) {
@@ -612,7 +612,7 @@ function filemaker_browse_tab($node, $fmid = NULL, $delete = NULL) {
 
       // Form to edit FileMaker record.
       $output .= '<h2>Edit Chosen Record</h2>';
-      $output .= drupal_get_form('filemaker_record_form');
+      $output .= drupal_get_form('filemaker_record_form', $node, 'browse', $fmid);
 
       // Portals for this node.
       $portals = filemaker_get_portals($node);
@@ -640,7 +640,7 @@ function filemaker_browse_tab($node, $fmid = NULL, $delete = NULL) {
  */
 function filemaker_find_tab($node) {
 
-  return drupal_get_form('filemaker_record_form');
+  return drupal_get_form('filemaker_record_form', $node, 'find');
 }
 
 
@@ -701,15 +701,16 @@ function filemaker_fields_tab($node, $fmid = NULL, $delete = NULL) {
  *
  * Creates a form to find, edit, or add a FileMaker record.
  */
-function filemaker_record_form() {
+function filemaker_record_form($form_state, $node, $tab, $fmid = NULL) {
 
-  $nid = arg(1);
-  $tab = arg(2);
-  $fmid = arg(3);
+  dsm('node');
+  dsm($node);
+  dsm('tab');
+  dsm($tab);
+  dsm('fmid');
+  dsm($fmid);
 
-  $node = node_load($nid);
-
-  $fm = filemaker_filemaker_object($node->fmcid);
+  $fm = filemaker_filemaker_object($node->fmcid); // FileMaker object.
 
   $form = array();
 
@@ -729,7 +730,7 @@ function filemaker_record_form() {
     $fieldset_title = t('Find Mode');
     $submit_button = t('Permform Find');
     $form['#submit'][] = 'filemaker_find_submit';
-    $form['#redirect'][] = 'node/' . $nid . '/browse';
+    $form['#redirect'][] = 'node/' . $node->nid . '/browse';
   }
   elseif ($tab == 'browse') {
     $fieldset_title = t('Browse Mode');
@@ -737,13 +738,13 @@ function filemaker_record_form() {
     $form['#submit'][] = 'filemaker_browse_submit';
 
     // Load the FileMaker record to be edited.
-    $filemaker_record = $fm->getRecordById($node->layout, $fmid);
+    $filemaker_record = $fm->getRecordById($node->layout, $fmid); // FileMaker_Record object.
   }
 
   // Store nid.
   $form['filemaker']['nid'] = array(
     '#type' => 'hidden',
-    '#value' => $nid,
+    '#value' => $node->nid,
   );
 
   // Create filemaker field fieldset.
@@ -844,7 +845,7 @@ function filemaker_browse_submit(&$form, &$form_state) {
   filemaker_update_record($node, $fmid, $form_state);
 
   // Reload the current page, minus the form, to display new found set.
-  drupal_goto(arg(0) . '/' . arg(1) . '/' . arg(2));
+  drupal_goto('node/' . $nid . '/browse');
 }
 
 
@@ -1250,7 +1251,7 @@ function filemaker_field_submit(&$form, &$form_state) {
     );
   }
 
-  drupal_goto(arg(0) . '/' . arg(1) . '/' . arg(2) . '/' . arg(3));
+  drupal_goto('node/' . $node->nid . '/layout/fields');
 }
 
 
