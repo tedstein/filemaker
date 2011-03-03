@@ -73,8 +73,8 @@ function filemaker_menu() {
   $items['node/%node/find'] = array(
     'title' => 'Find Mode',
     'description' => 'FileMaker Find Mode',
-    'page callback' => 'filemaker_find_tab',
-    'page arguments' => array(1),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('filemaker_record_form', 1, 'find'),
     'access callback' => 'filemaker_tab_access',
     'access arguments' => array('browse and find mode', 1),
     'type' => MENU_LOCAL_TASK,
@@ -109,8 +109,9 @@ function filemaker_menu() {
   $items['node/%node/create'] = array(
     'title' => 'Create Mode',
     'description' => 'FileMaker Create Mode',
-    'page callback' => 'filemaker_create_tab',
-    'page arguments' => array(1),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('filemaker_record_form', 1, 'create'),
+    // 'page arguments' => array(1),
     'access callback' => 'filemaker_tab_access',
     'access arguments' => array('create mode', 1),
     'type' => MENU_LOCAL_TASK,
@@ -525,21 +526,6 @@ function filemaker_layout_tab($node) {
 
 
 
-
-/**
- * Page callback for the 'Create Mode' tab on a filemaker node.
- *
- * Form to create new FileMaker records.
- */
-function filemaker_create_tab($node) {
-
-  return drupal_get_form('filemaker_record_form', $node, 'create');
-}
-
-
-
-
-
 /**
  * Page callback for the 'FileMaker portals' tab on a filemaker node.
  *
@@ -627,20 +613,6 @@ function filemaker_browse_tab($node, $fmid = NULL, $delete = NULL) {
   $output .= filemaker_found_set($node->nid);
 
   return $output;
-}
-
-
-
-
-
-/**
- * Page callback for the find mode tab on a filemaker node.
- *
- * Form to search a FileMaker layout.
- */
-function filemaker_find_tab($node) {
-
-  return drupal_get_form('filemaker_record_form', $node, 'find');
 }
 
 
