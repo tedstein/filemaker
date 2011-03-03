@@ -1131,6 +1131,9 @@ function filemaker_portal_submit(&$form, &$form_state) {
 
   $sql = "INSERT INTO {filemaker_portal} (fmpid, nid, name) VALUES (NULL, %d, '%s')";
   db_query($sql, $nid, $portal_name);
+
+  watchdog('filemaker', 'FileMaker portal created', array(), WATCHDOG_INFO);
+  drupal_set_message(t('FileMaker portal added to node.'));
 }
 
 
@@ -1304,6 +1307,7 @@ function filemaker_field_submit(&$form, &$form_state) {
       $form_state['values']['fmfielddefault'], // default
       $form_state['values']['fmfieldrequired'] // required
     );
+    watchdog('filemaker', 'FileMaker field created', array(), WATCHDOG_INFO);
   }
 
   elseif ($mode == 'update') {
@@ -1326,6 +1330,7 @@ function filemaker_field_submit(&$form, &$form_state) {
       $form_state['values']['fmfieldrequired'], // required
       $form_state['values']['fmfid'] // fmfid
     );
+    watchdog('filemaker', 'FileMaker field updated', array(), WATCHDOG_INFO);
   }
 
   drupal_goto('node/' . $node->nid . '/layout/fields');
