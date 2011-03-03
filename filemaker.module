@@ -661,7 +661,7 @@ function filemaker_fields_tab($node, $fmfid = NULL, $delete = NULL) {
 /**
  * Callback for the filemaker_delete_form.
  *
- * Deletes either one of the following:
+ * Confirmation to delete one of the following:
  *  - FileMaker record.
  *  - Portal, added in layout mode.
  *  - Field, added in layout mode.
@@ -679,27 +679,25 @@ function filemaker_delete_form($form_state, $node, $what, $id) {
   switch ($what) {
 
     case 'record':
-      $confirm_text = 'Delete this FileMaker record?';
-      $submit_button = 'Delete Record';
-      $callback_arguments = array($node, $id);
+
+      $confirm_text = t('Delete this FileMaker record?');
+      $submit_button = t('Delete Record');
       $form['#redirect'][] = 'node/' . $node->nid . '/browse';
       break;
 
     case 'field':
-      $confirm_text = 'Remove this field from your layout?';
-      $submit_button = 'Delete Field';
-      $callback_arguments = array($node, $id);
+
+      $confirm_text = t('Remove this field from your layout?');
+      $submit_button = t('Delete Field');
       $form['#redirect'][] = 'node/' . $node->nid . '/layout/fields';
       break;
 
     case 'portal':
-      $confirm_text = 'Remove this portal from your layout?';
-      $submit_button = 'Delete Portal';
-      $callback_arguments = array($node, $id);
+
+      $confirm_text = t('Remove this portal from your layout?');
+      $submit_button = t('Delete Portal');
       $form['#redirect'][] = 'node/' . $node->nid . '/layout/portals';
       break;
-
-
   }
 
   // Store nid.
@@ -708,7 +706,7 @@ function filemaker_delete_form($form_state, $node, $what, $id) {
     '#value' => $node->nid,
   );
 
-  // Store id.
+  // Store id. Could be fmid, fmfid, or fmpid.
   $form['filemaker']['id'] = array(
     '#type' => 'hidden',
     '#value' => $id,
@@ -749,15 +747,18 @@ function filemaker_delete_form_submit(&$form, &$form_state) {
   switch ($form_state['values']['op']) {
 
     case 'Delete Record':
+
       $node = node_load($form_state['values']['nid']);
       filemaker_delete_record($node, $form_state['values']['id']);
       break;
 
     case 'Delete Field':
+
       filemaker_delete_field($form_state['values']['id']); 
       break;
 
     case 'Delete Portal':
+
       filemaker_delete_portal($form_state['values']['id']);
       break;
   }
@@ -773,11 +774,6 @@ function filemaker_delete_form_submit(&$form, &$form_state) {
  * Creates a form to find, edit, or add a FileMaker record.
  */
 function filemaker_record_form($form_state, $node, $tab = NULL, $fmid = NULL) {
-
-  dsm($form_state);
-  dsm($node);
-  dsm($tab);
-  dsm($fmid);
 
   $fm = filemaker_filemaker_object($node->fmcid); // FileMaker object.
 
@@ -840,14 +836,17 @@ function filemaker_record_form($form_state, $node, $tab = NULL, $fmid = NULL) {
     switch ($tab) {
 
       case 'create':
+
         $form['fmnode'][$data->name] = filemaker_field_for_form_array($node, $data->name, $data->label, $data->widget, $data->default_value, $data->required);
         break;
 
       case 'find':
+
         $form['fmnode'][$data->name] = filemaker_field_for_form_array($node, $data->name, $data->label, 'textfield', $data->default_value, FALSE);
         break;
 
       case 'browse':
+
         $record_data = check_plain($filemaker_record->getField($data->name));
         $form['fmnode'][$data->name] = filemaker_field_for_form_array($node, $data->name, $data->label, $data->widget, $record_data, $data->required);
         break;
@@ -2104,7 +2103,7 @@ function filemaker_format_date_for_drupal($date) {
 
 
 /**
- * Debugging output made pretty.  Object-aware.
+ * Debugging output made pretty. Object-aware.
  */
 function filemaker_ds($v) {
   if (is_object($v)) {
