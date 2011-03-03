@@ -973,6 +973,7 @@ function filemaker_create_submit(&$form, &$form_state) {
   // Error or success message.
   if (!filemaker_is_error($result)) {
 
+    watchdog('filemaker', 'FileMaker record created', array(), WATCHDOG_INFO);
     drupal_set_message(t('Record saved to FileMaker.'));
 
     // Fire off the create trigger.
@@ -1398,6 +1399,7 @@ function filemaker_delete_record($node, $fmid) {
   if (!filemaker_is_error($result)) {
 
     drupal_set_message(t('Record deleted from FileMaker.'));
+    watchdog('filemaker', 'FileMaker record deleted', array(), WATCHDOG_INFO);
 
     // Perform new find, to exclude deleted record from our found set.
     if ($_SESSION['filemaker'][$node->nid]['foundset']['request']) {
@@ -1419,6 +1421,7 @@ function filemaker_delete_field($fmfid) {
   $result = db_query($sql, $fmfid);
 
   drupal_set_message(t('FileMaker field deleted from FileMaker node.'));
+  watchdog('filemaker', 'FileMaker field deleted', array(), WATCHDOG_INFO);
 }
 
 
@@ -1433,6 +1436,7 @@ function filemaker_delete_portal($fmpid) {
   $result = db_query($sql, $fmpid);
 
   drupal_set_message(t('FileMaker portal deleted from FileMaker node.'));
+  watchdog('filemaker', 'FileMaker portal deleted', array(), WATCHDOG_INFO);
 }
 
 
@@ -1509,6 +1513,7 @@ function filemaker_update_record($node, $fmid, &$form_state) {
     module_invoke_all('filemaker', 'update', $node);
 
     drupal_set_message(t('Record saved to FileMaker.'));
+    watchdog('filemaker', 'FileMaker record updated', array(), WATCHDOG_INFO);
   }
 
   // Perform new find.
