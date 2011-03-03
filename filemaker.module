@@ -1307,6 +1307,8 @@ function filemaker_field_submit(&$form, &$form_state) {
       $form_state['values']['fmfielddefault'], // default
       $form_state['values']['fmfieldrequired'] // required
     );
+
+    drupal_set_message(t('FileMaker field added to FileMaker node.'));
     watchdog('filemaker', 'FileMaker field created', array(), WATCHDOG_INFO);
   }
 
@@ -1330,7 +1332,9 @@ function filemaker_field_submit(&$form, &$form_state) {
       $form_state['values']['fmfieldrequired'], // required
       $form_state['values']['fmfid'] // fmfid
     );
+
     watchdog('filemaker', 'FileMaker field updated', array(), WATCHDOG_INFO);
+    drupal_set_message(t('FileMaker field updated.'));
   }
 
   drupal_goto('node/' . $node->nid . '/layout/fields');
