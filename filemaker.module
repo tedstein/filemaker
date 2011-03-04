@@ -96,7 +96,7 @@ function filemaker_menu() {
     'title' => 'Browse Mode',
     'description' => 'FileMaker Browse Mode',
     'page callback' => 'filemaker_browse_tab',
-    'page arguments' => array(1, 'browse'),
+    'page arguments' => array(1, 'browse', 3),
     'access callback' => 'filemaker_tab_access',
     'access arguments' => array('browse and find mode', 1),
     'type' => MENU_LOCAL_TASK,
@@ -971,8 +971,8 @@ function filemaker_create_submit(&$form, &$form_state) {
   // Error or success message.
   if (!filemaker_is_error($node, $result)) {
 
-    watchdog('filemaker', 'FileMaker record created', array(), WATCHDOG_INFO);
     drupal_set_message(t('Record saved to FileMaker.'));
+    watchdog('filemaker', 'FileMaker record created', array(), WATCHDOG_INFO);
 
     // Fire off the create trigger.
     module_invoke_all('filemaker', 'create', $node);
@@ -1016,6 +1016,9 @@ function filemaker_layout_form($form_state, $node) {
   foreach ($layouts as $layout) {
     $options[$layout] = $layout;
   }
+
+  asort($options);
+
   $form['layout'] = array(
       '#type' => 'select',
       '#options' => $options,
@@ -1092,6 +1095,9 @@ function filemaker_portal_form($form_state, $node) {
     foreach ($portals as $portal) {
       $options[$portal->getName()] = $portal->getName();
     }
+
+    asort($options);
+
     $form['fmnode']['fmportalname'] = array(
       '#title' => t('Portal Name'),
       '#type' => 'select',
@@ -1130,8 +1136,8 @@ function filemaker_portal_submit(&$form, &$form_state) {
   $sql = "INSERT INTO {filemaker_portal} (fmpid, nid, name) VALUES (NULL, %d, '%s')";
   db_query($sql, $nid, $portal_name);
 
-  watchdog('filemaker', 'FileMaker portal created', array(), WATCHDOG_INFO);
   drupal_set_message(t('FileMaker portal added to node.'));
+  watchdog('filemaker', 'FileMaker portal created', array(), WATCHDOG_INFO);
 }
 
 
@@ -1143,7 +1149,7 @@ function filemaker_portal_submit(&$form, &$form_state) {
  * A FileMaker node can have n number of FileMaker fields, but they are limited to the fields on the
  * FileMaker layout that the node is based on.
  */
-function filemaker_field_form($form_state, $node, $fmfid) {
+function filemaker_field_form($form_state, $node, $fmfid = NULL) {
 
   // Updating or inserting?
   if ($fmfid) {
@@ -1192,13 +1198,13 @@ function filemaker_field_form($form_state, $node, $fmfid) {
     '#value' => $node->nid,
   );
 
-  // Store the $fmfid, so we know which field to update.
+  // Store the fmfid, so we know which field to update.
   $form['filemaker']['fmfid'] = array(
     '#type' => 'hidden',
     '#value' => $fmfid,
   );
 
-  // Create filemaker field fieldset.
+  // Create filemaker fieldset.
   $form['fmfield'] = array(
     '#title' => t('FileMaker Field'),
     '#type' => 'fieldset',
@@ -1281,6 +1287,7 @@ function filemaker_field_submit(&$form, &$form_state) {
   $layout = $fm->getLayout($node->layout); // FileMaker_Layout object.
   if (filemaker_is_error($node, $layout)) return;
   $fields = $layout->getFields(); // Array of FileMaker_Field objects.
+  if (filemaker_is_error($node, $fields)) return;
 
   // Get information about field (field type) from FileMaker.
   $field_name = $form_state['values']['fmfieldname'];
@@ -1738,6 +1745,7 @@ function filemaker_field_for_form_array($node, $name, $label, $widget, $default_
     $layout = $fm->getLayout($node->layout);  // FileMaker_Layout object.
     if (filemaker_is_error($node, $layout)) return;
     $value_list = $layout->getField($name)->getValueList(); // Array of value list items.
+    if (filemaker_is_error($node, $value_list)) return;
 
     // Place value list in $options array.
     // Use the value for the key and the value.
@@ -1752,14 +1760,7 @@ function filemaker_field_for_form_array($node, $name, $label, $widget, $default_
 
   // Checkboxes must have #default_value as an array.
   if ($widget == 'checkboxes') {
-
-    if (empty($field['#default_value'])) {
-      $field['#default_value'] = array();
-    }
-
-    else {
-      $field['#default_value'] = explode("\n", $field['#default_value']);
-    }
+    filemaker_format_checkboxes_for_drupal($field);
   }
 
   // Dates must have #default_value as an array.
@@ -2005,12 +2006,12 @@ function filemaker_format_all($field, &$form_state, &$record) {
 
     // Format date for FileMaker.
     if ($field->widget == "date") {
-      $form_state['values'][$field->name] = filemaker_format_date($form_state['values'][$field->name]);
+      $form_state['values'][$field->name] = filemaker_format_date_for_filemaker($form_state['values'][$field->name]);
     }
 
     // Prepare checkboxes data (which might have more than one value).
     if ($field->widget == "checkboxes") {
-      $form_state['values'][$field->name] = filemaker_format_checkboxes($form_state['values'][$field->name]);
+      $form_state['values'][$field->name] = filemaker_format_checkboxes_for_filemaker($form_state['values'][$field->name]);
     }
 
     // Update FileMaker_Record object with value from form.
@@ -2036,7 +2037,7 @@ function filemaker_format_all($field, &$form_state, &$record) {
  * @return
  *   A string, containing all of the selected values from the $form_state_value array.
  */
-function filemaker_format_checkboxes($form_state_value) {
+function filemaker_format_checkboxes_for_filemaker($form_state_value) {
 
   // Only store selected values.
   $selected = array();
@@ -2064,7 +2065,7 @@ function filemaker_format_checkboxes($form_state_value) {
  * @return
  *   The date as a string: mm/dd/yyyy
  */
-function filemaker_format_date($date) {
+function filemaker_format_date_for_filemaker($date) {
 
   return $date['month'] . '/' . $date['day'] . '/' . $date['year'];
 }
@@ -2104,6 +2105,30 @@ function filemaker_format_date_for_drupal($date) {
   );
 
   return $date;
+}
+
+
+
+
+
+/**
+ * Formats data from FileMaker checkboxes for a Drupal form.
+ *
+ * Receives field array with #default_value as a string and 
+ *  changes #default_value to an array.
+ *
+ * @param $field
+ *  Drupal FAPI field array.
+ */
+function filemaker_format_checkboxes_for_drupal(&$field) {
+
+    if (empty($field['#default_value'])) {
+      $field['#default_value'] = array();
+    }
+
+    else {
+      $field['#default_value'] = explode("\n", $field['#default_value']);
+    }
 }
 
 
