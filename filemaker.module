@@ -46,6 +46,18 @@ function filemaker_menu() {
     'file' => 'filemaker.admin.inc',
   );
 
+  // FileMaker layout tab, attached to filemaker nodes.
+  $items['node/%node/layout'] = array(
+    'title' => 'Layout Mode',
+    'description' => 'FileMaker layout mode',
+    'page callback' => 'filemaker_layout_tab',
+    'page arguments' => array(1),
+    'access callback' => 'filemaker_tab_access',
+    'access arguments' => array('layout mode', 1),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 200,
+  );
+
   // FileMaker fields tab, attached to filemaker nodes.
   $items['node/%node/layout/fields'] = array(
     'parent' => 'node/%/layout',
@@ -122,18 +134,6 @@ function filemaker_menu() {
     'page arguments' => array('filemaker_record_form', 1, 'find'),
     'access callback' => 'filemaker_tab_access',
     'access arguments' => array('browse and find mode', 1),
-    'type' => MENU_LOCAL_TASK,
-    'weight' => 200,
-  );
-
-  // FileMaker layout tab, attached to filemaker nodes.
-  $items['node/%node/layout'] = array(
-    'title' => 'Layout Mode',
-    'description' => 'FileMaker layout mode',
-    'page callback' => 'filemaker_layout_tab',
-    'page arguments' => array(1),
-    'access callback' => 'filemaker_tab_access',
-    'access arguments' => array('layout mode', 1),
     'type' => MENU_LOCAL_TASK,
     'weight' => 200,
   );
@@ -761,7 +761,7 @@ function filemaker_delete_form_submit(&$form, &$form_state) {
 
     case 'Delete Field':
 
-      filemaker_delete_field($form_state['values']['id']); 
+      filemaker_delete_field($node, $form_state['values']['id']); 
       break;
 
     case 'Delete Portal':
@@ -800,7 +800,7 @@ function filemaker_record_form($form_state, $node, $tab = NULL, $fmid = NULL) {
   }
   elseif ($tab == 'find') {
     $fieldset_title = t('Find Mode');
-    $submit_button = t('Permform Find');
+    $submit_button = t('Perform Find');
     $form['#submit'][] = 'filemaker_find_submit';
     $form['#redirect'][] = 'node/' . $node->nid . '/browse';
   }
@@ -810,7 +810,8 @@ function filemaker_record_form($form_state, $node, $tab = NULL, $fmid = NULL) {
     $form['#submit'][] = 'filemaker_browse_submit';
 
     // Load the FileMaker record to be edited.
-    $filemaker_record = $fm->getRecordById($node->layout, $fmid); // FileMaker_Record object.
+    $record = $fm->getRecordById($node->layout, $fmid); // FileMaker_Record object.
+    filemaker_is_error($node, $record);
   }
 
   // Store nid.
@@ -854,7 +855,7 @@ function filemaker_record_form($form_state, $node, $tab = NULL, $fmid = NULL) {
 
       case 'browse':
 
-        $record_data = check_plain($filemaker_record->getField($data->name));
+        $record_data = check_plain($record->getField($data->name));
         $form['fmnode'][$data->name] = filemaker_field_for_form_array($node, $data->name, $data->label, $data->widget, $record_data, $data->required);
         break;
 
@@ -1117,7 +1118,7 @@ function filemaker_portal_form($form_state, $node) {
 
   // No portals on layout, so no form needed.
   else {
-    drupal_set_message(t('No portals on this layout (%layout)', array('%layout' => $node->layout)));
+    drupal_set_message(t('No portals on this layout (%layout).', array('%layout' => $node->layout)));
     return;
   }
 }
@@ -1342,6 +1343,9 @@ function filemaker_field_submit(&$form, &$form_state) {
     drupal_set_message(t('FileMaker field updated.'));
   }
 
+  // Get a new found set table, including our new or revised field.
+  filemaker_perform_find($node);
+
   drupal_goto('node/' . $node->nid . '/layout/fields');
 }
 
@@ -1429,13 +1433,16 @@ function filemaker_delete_record($node, $fmid) {
 /**
  * Deletes a single FileMaker field.
  */
-function filemaker_delete_field($fmfid) {
+function filemaker_delete_field($node, $fmfid) {
 
   $sql = "DELETE FROM {filemaker_field} WHERE fmfid = %d";
   $result = db_query($sql, $fmfid);
 
   drupal_set_message(t('FileMaker field deleted from FileMaker node.'));
   watchdog('filemaker', 'FileMaker field deleted', array(), WATCHDOG_INFO);
+
+  // Need a new found set table so we aren't showing deleted field.
+  filemaker_perform_find($node);
 }
 
 
@@ -1707,6 +1714,7 @@ function filemaker_is_error($node, $object) {
 
     if ($error_message) {
       drupal_set_message($error_message, 'error');
+      watchdog('filemaker', $error_message, array(), WATCHDOG_ERROR);
     }
 
     return TRUE;
