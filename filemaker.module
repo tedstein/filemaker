@@ -421,7 +421,7 @@ function filemaker_form($node) {
   $form['fmview'] = array(
     '#type' => 'select',
     '#options' => $options,
-    '#title' => t('FileMaker feature to use for default Drupal view.'),
+    '#title' => t('FileMaker feature to use for default Drupal view'),
     '#required' => TRUE,
     '#default_value' => isset($node->fmview) ? $node->fmview : '',
     '#weight' => 5,
@@ -751,11 +751,12 @@ function filemaker_delete_form($form_state, $node, $what, $id) {
  */
 function filemaker_delete_form_submit(&$form, &$form_state) {
 
+  $node = node_load($form_state['values']['nid']);
+
   switch ($form_state['values']['op']) {
 
     case 'Delete Record':
 
-      $node = node_load($form_state['values']['nid']);
       filemaker_delete_record($node, $form_state['values']['id']);
       break;
 
@@ -1344,7 +1345,7 @@ function filemaker_field_submit(&$form, &$form_state) {
   }
 
   // Get a new found set table, including our new or revised field.
-  filemaker_perform_find($node);
+  filemaker_perform_find($node, 'layout');
 
   drupal_goto('node/' . $node->nid . '/layout/fields');
 }
@@ -1371,11 +1372,11 @@ function filemaker_default_find($node) {
   $request = $fm->newFindCommand($node->layout); // FileMaker_Command_Find object
 
   // Get fields added to this FileMaker node.
-  $fields_sql = "SELECT name, label, widget, default_value FROM {filemaker_field} WHERE nid = %d ORDER BY weight, fmfid";
-  $fields_result = db_query($fields_sql, $node->nid);
+  $sql = "SELECT name, label, widget, default_value FROM {filemaker_field} WHERE nid = %d ORDER BY weight, fmfid";
+  $result = db_query($sql, $node->nid);
 
   // Loop through fields, setting each one with the default value.
-  while ($data = db_fetch_object($fields_result)) {
+  while ($data = db_fetch_object($result)) {
     $request->addFindCriterion($data->name, $data->default_value);
   }
 
@@ -1438,11 +1439,13 @@ function filemaker_delete_field($node, $fmfid) {
   $sql = "DELETE FROM {filemaker_field} WHERE fmfid = %d";
   $result = db_query($sql, $fmfid);
 
+  // Need a new found set table so we aren't showing deleted field.
+  filemaker_default_find($node);
+  drupal_set_message('Found set cleared.');
+
   drupal_set_message(t('FileMaker field deleted from FileMaker node.'));
   watchdog('filemaker', 'FileMaker field deleted', array(), WATCHDOG_INFO);
 
-  // Need a new found set table so we aren't showing deleted field.
-  filemaker_perform_find($node);
 }
 
 
@@ -1838,7 +1841,6 @@ function filemaker_perform_find($node, $tab = NULL) {
   }
 
   // Might need to load class definition from the API to avoid error when unserializing FileMaker_Command_Find object.
-  // We do this by creating an empty FileMaker_Command_Find object.
   $fm = filemaker_filemaker_object($node->fmcid); // FileMaker object
   $request = $fm->newFindCommand($node->layout); // FileMaker_Command_Find object
 
@@ -1872,7 +1874,6 @@ function filemaker_perform_find($node, $tab = NULL) {
 
   // Perform the find.
   $result = $request->execute();
-
   if (filemaker_is_error($node, $result)) return;
 
   // Store find request in session so that we can perform a new find to recreate the found set if record in it is edited or deleted.
