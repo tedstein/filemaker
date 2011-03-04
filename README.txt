@@ -15,6 +15,7 @@ Drupal features and integration:
 - Actions and triggers
 - Tokens
 - Rich set of permissions
+- Logs all actions
 - Choice of interface for anonymous users
 
 ***********************************************************

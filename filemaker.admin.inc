@@ -1,12 +1,10 @@
 <?php
 
-
-
-
 /**
  * @file
  * Administrative page callbacks for the filemaker module.
  */
+
 
 
 
@@ -40,6 +38,7 @@ function filemaker_admin_settings_page() {
 
   return theme_table($head, $rows);
 }
+
 
 
 

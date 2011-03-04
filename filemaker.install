@@ -5,27 +5,46 @@
  * Schema for FileMaker module.
  */
 
+
+
+
+
 /**
  * Implementation of hook_requirements().
+ *
+ * Uses the Libraries module to provide a message about
+ * the status of the FileMaker API in status report.
  */
 function filemaker_requirements($phase) {
+
   if ($phase == "runtime") {
+
+    // Try to load the API.
     filemaker_load_api();
     $requirements['filemaker']['title'] = t('FileMaker');
+    
+    // Is API available?
     if (class_exists('FileMaker')) {
       $requirements['filemaker']['value'] = 'FileMaker API is installed correctly';
       $requirements['filemaker']['severity'] = REQUIREMENT_OK;
     }
+
+    // Required API wasn't found.
     else {
-      // Required API wasn't found.
       $requirements['filemaker']['value'] = t('FileMaker API was not found');
+
       // Provide instructions on installing the FileMaker API for PHP.
-      $requirements['filemaker']['description'] = t('The FileMaker API for PHP is required for this module. The API comes with your copy of FileMaker server and should be placed in sites/all/libraries.');
+      $requirements['filemaker']['description'] = t('The FileMaker API for PHP is required for this module. The API comes with your copy of FileMaker server and should be placed in sites/all/libraries/filemakerapi.');
       $requirements['filemaker']['severity'] = REQUIREMENT_ERROR;
     }
-  } // done if phase = runtime
+  }
+
   return $requirements;
 }
+
+
+
+
 
 /**
  * Implementation of hook_install().
@@ -34,12 +53,20 @@ function filemaker_install() {
   drupal_install_schema('filemaker');
 }
 
+
+
+
+
 /**
  * Implementation of hook_uninstall().
  */
 function filemaker_uninstall() {
   drupal_uninstall_schema('filemaker');
 }
+
+
+
+
 
 /**
  * Implementation of hook_schema().
@@ -216,5 +243,3 @@ function filemaker_schema() {
 
   return $schema;
 }
-
-

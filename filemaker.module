@@ -582,8 +582,8 @@ function filemaker_portals_tab($node, $fmid = NULL, $delete = NULL) {
   }
 
   // Add table of portals and form to add or edit portal.
-  $output = filemaker_portals_table($node->nid);
-  $output .= drupal_get_form('filemaker_portal_form', $node);
+  $output = drupal_get_form('filemaker_portal_form', $node);
+  $output .= filemaker_portals_table($node->nid);
 
   return $output;
 }
