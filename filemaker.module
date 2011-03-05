@@ -340,7 +340,7 @@ function filemaker_view($node, $teaser = FALSE, $page = FALSE) {
   // Browse mode.
   elseif ($node->fmview == 'browse_mode') {
     $node->content['filemaker'] = array(
-      '#value' => filemaker_browse_tab(),
+      '#value' => filemaker_browse_tab($node),
       '#weight' => 10,
     );
   }
@@ -1841,6 +1841,7 @@ function filemaker_perform_find($node, $tab = NULL) {
   }
 
   // Might need to load class definition from the API to avoid error when unserializing FileMaker_Command_Find object.
+  // We do this by creating an empty FileMaker_Command_Find object.
   $fm = filemaker_filemaker_object($node->fmcid); // FileMaker object
   $request = $fm->newFindCommand($node->layout); // FileMaker_Command_Find object
 
