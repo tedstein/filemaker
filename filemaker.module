@@ -86,7 +86,7 @@ function filemaker_menu() {
   $items['node/%node/layout/fields/%/delete'] = array(
     'title' => 'Confirm Deletion of FileMaker field.',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('filemaker_delete_form', 4, 'field', 1),
+    'page arguments' => array('filemaker_delete_form', 'field', 4, 1),
     'access callback' => 'filemaker_tab_access',
     'access arguments' => array('layout mode', 1),
     'type' => MENU_LOCAL_TASK,
@@ -108,7 +108,7 @@ function filemaker_menu() {
   $items['node/%node/layout/portals/%/delete'] = array(
     'title' => 'Confirm Deletion of FileMaker portal.',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('filemaker_delete_form', 4, 'portal', 1),
+    'page arguments' => array('filemaker_delete_form', 'portal', 4, 1),
     'access callback' => 'filemaker_tab_access',
     'access arguments' => array('layout mode', 1),
     'type' => MENU_LOCAL_TASK,
@@ -131,7 +131,7 @@ function filemaker_menu() {
   $items['node/%node/browse/%/delete'] = array(
     'title' => 'Confirm Deletion of FileMaker record.',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('filemaker_delete_form', 3, 'record', 1),
+    'page arguments' => array('filemaker_delete_form', 'record',3, 1),
     'access callback' => 'filemaker_tab_access',
     'access arguments' => array('browse and find mode', 1),
     'type' => MENU_LOCAL_TASK,
