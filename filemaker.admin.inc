@@ -49,54 +49,37 @@ function filemaker_admin_settings_page() {
  * @return
  *    Form to insert or edit connection and themed HTML table of all the layouts the connection being edited has access to.
  */
-function filemaker_admin_settings_connection_page() {
+function filemaker_admin_settings_connection_page($fmcid = NULL) {
 
-  $fmcid = arg(4);
-  $delete = arg(5);
-
-  // Is there a connection to edit or delete?
+  // Is there a connection to edit?
   if ($fmcid) {
 
-    // If delete, then delete record of connection and recall this page without the the fmcid.
-    if ($delete == 'delete') {
+    drupal_set_message($fmcid);
 
-      // Delete record.
-      $sql = "DELETE FROM {filemaker_connection} WHERE fmcid = %d";
-      $result = db_query($sql, $fmcid);
-      drupal_set_message(t('FileMaker connection deleted.'));
-
-      // Redirect to a list of all connections.
-      $return_path = 'admin/settings/filemaker';
-      drupal_goto($return_path);
-    }
-
-    // Not deleting a connection.
-    else {
-
-      // Get FileMaker object.
-      $fm = filemaker_filemaker_object($fmcid);
-
-      // Print out table of layouts.
-      if ($fm instanceof FileMaker) {
-
-        $layouts = $fm->listLayouts();
-
-        // Only print out table of connections if we can connect to FileMaker.
-        if (!filemaker_is_error($layouts)) {
-
-          drupal_set_message(t('Connected to FileMaker.'));
-
-          $rows = array();
-          foreach ($layouts as $layout) {
-            $rows[] = array($layout);
-          }
-
-          $output .= theme_table(array('Layout'), $rows);
+    // Get FileMaker object.
+    $fm = filemaker_object(NULL, $fmcid);
+  
+    // Print out table of layouts.
+    if ($fm instanceof FileMaker) {
+  
+      $layouts = $fm->listLayouts();
+  
+      // Only print out table of connections if we can connect to FileMaker.
+      if (!filemaker_is_error($layouts)) {
+  
+        drupal_set_message(t('Connected to FileMaker.'));
+  
+        $rows = array();
+        foreach ($layouts as $layout) {
+          $rows[] = array($layout);
         }
+  
+        $output .= theme_table(array('Layout'), $rows);
       }
     }
   }
-  // Append form to the page.
+
+  // Nothing to edit, append form to page to create connection record.
   $output .= drupal_get_form('filemaker_connection_form');
 
   return $output;

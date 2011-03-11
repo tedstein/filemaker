@@ -40,6 +40,7 @@ function filemaker_menu() {
     'title' => 'FileMaker connection',
     'description' => 'View, add, or edit FileMaker connection',
     'page callback' => 'filemaker_admin_settings_connection_page',
+    'page arguments' => array(4),
     'access callback' => 'user_access',
     'access arguments' => array('administer filemaker'),
     'type' => MENU_NORMAL_ITEM,
@@ -783,7 +784,7 @@ function filemaker_delete_form_submit(&$form, &$form_state) {
  */
 function filemaker_record_form($form_state, $node, $tab = NULL, $fmid = NULL) {
 
-  $fm = filemaker_filemaker_object($node->fmcid); // FileMaker object.
+  $fm = filemaker_object($node); // FileMaker object.
 
   $form = array();
 
@@ -812,7 +813,7 @@ function filemaker_record_form($form_state, $node, $tab = NULL, $fmid = NULL) {
 
     // Load the FileMaker record to be edited.
     $record = $fm->getRecordById($node->layout, $fmid); // FileMaker_Record object.
-    filemaker_is_error($node, $record);
+    filemaker_is_error($record, $node);
   }
 
   // Store nid.
@@ -892,8 +893,8 @@ function filemaker_find_submit(&$form, &$form_state) {
   $node = node_load($form_state['values']['nid']);
 
   // Create FileMaker_Command_Find object.
-  $fm = filemaker_filemaker_object($node->fmcid);
-  $request = $fm->newFindCommand($node->layout);
+  $fm = filemaker_object($node); // FileMaker object.
+  $request = $fm->newFindCommand($node->layout); // FileMaker_Command_Find object.
 
   // Get fields added to this FileMaker node.
   $fields_sql = "SELECT name, label, widget FROM {filemaker_field} WHERE nid = %d ORDER BY weight, fmfid";
@@ -943,11 +944,11 @@ function filemaker_create_submit(&$form, &$form_state) {
   $nid = $form_state['values']['nid'];
   $node = node_load($nid);
 
-  $fm = filemaker_filemaker_object($node->fmcid); // FileMaker object.
+  $fm = filemaker_object($node); // FileMaker object.
 
   if ($node->layout) {
     $record = $fm->createRecord($node->layout); // FileMaker_Record object.
-    if (filemaker_is_error($node, $record)) return;
+    if (filemaker_is_error($record, $node)) return;
   }
   else {
     druapl_set_message(t('No layout selected for this node.'));
@@ -971,7 +972,7 @@ function filemaker_create_submit(&$form, &$form_state) {
   $result = $record->commit();
 
   // Error or success message.
-  if (!filemaker_is_error($node, $result)) {
+  if (!filemaker_is_error($result, $node)) {
 
     drupal_set_message(t('Record saved to FileMaker.'));
     watchdog('filemaker', 'FileMaker record created', array(), WATCHDOG_INFO);
@@ -1010,10 +1011,10 @@ function filemaker_layout_form($form_state, $node) {
   );
 
   // Get $options array of layouts for the current connection.
-  $fm = filemaker_filemaker_object($node->fmcid);
+  $fm = filemaker_object($node);
   $options = array();
   $layouts = $fm->listLayouts();
-  if (filemaker_is_error($node, $layouts)) return t('Error connecting to FileMaker database.');
+  if (filemaker_is_error($layouts, $node)) return t('Error connecting to FileMaker database.');
 
   foreach ($layouts as $layout) {
     $options[$layout] = $layout;
@@ -1064,13 +1065,13 @@ function filemaker_layout_submit(&$form, &$form_state) {
  */
 function filemaker_portal_form($form_state, $node) {
 
-  $fm = filemaker_filemaker_object($node->fmcid); // FileMaker object.
+  $fm = filemaker_object($node); // FileMaker object.
 
   $layout = $fm->getLayout($node->layout); // FileMaker layout object.
-  if (filemaker_is_error($node, $layout)) return t('Error');
+  if (filemaker_is_error($layout, $node)) return t('Error');
 
   $portals = $layout->getRelatedSets(); // Array of Portals (FileMaker_RelatedSet objects).
-  if (filemaker_is_error($node, $portals)) return;
+  if (filemaker_is_error($portals, $node)) return;
 
   // Only create form if there are portals for the FileMaker layout the node is based on.
   if (count($portals)) {
@@ -1164,9 +1165,9 @@ function filemaker_field_form($form_state, $node, $fmfid = NULL) {
   }
 
   // Get fields from FileMaker layout.
-  $fm = filemaker_filemaker_object($node->fmcid); // FileMaker object.
+  $fm = filemaker_object($node); // FileMaker object.
   $layout = $fm->getLayout($node->layout); // FileMaker_Layout object.
-  if (filemaker_is_error($node, $layout)) {
+  if (filemaker_is_error($layout, $node)) {
     drupal_set_message(t('No FileMaker layout selected.'), 'error');
     return;
   }
@@ -1285,11 +1286,11 @@ function filemaker_field_submit(&$form, &$form_state) {
 
   $mode = $form_state['values']['mode'];
 
-  $fm = filemaker_filemaker_object($node->fmcid); // FileMaker object.
+  $fm = filemaker_object($node); // FileMaker object.
   $layout = $fm->getLayout($node->layout); // FileMaker_Layout object.
-  if (filemaker_is_error($node, $layout)) return;
+  if (filemaker_is_error($layout, $node)) return;
   $fields = $layout->getFields(); // Array of FileMaker_Field objects.
-  if (filemaker_is_error($node, $fields)) return;
+  if (filemaker_is_error($fields, $node)) return;
 
   // Get information about field (field type) from FileMaker.
   $field_name = $form_state['values']['fmfieldname'];
@@ -1368,7 +1369,7 @@ function filemaker_field_submit(&$form, &$form_state) {
 function filemaker_default_find($node) {
 
   // Create FileMaker_Command_Find object.
-  $fm = filemaker_filemaker_object($node->fmcid); // FileMaker object
+  $fm = filemaker_object($node); // FileMaker object
   $request = $fm->newFindCommand($node->layout); // FileMaker_Command_Find object
 
   // Get fields added to this FileMaker node.
@@ -1410,12 +1411,12 @@ function filemaker_add_field_to_token(&$node, $field, $value) {
  */
 function filemaker_delete_record($node, $fmid) {
 
-  $fm = filemaker_filemaker_object($node->fmcid); // FileMaker object.
+  $fm = filemaker_object($node); // FileMaker object.
   $delete_command = $fm->newDeleteCommand($node->layout, $fmid); // FileMaker_Command_Delete object.
   $result = $delete_command->execute(); // FileMaker_Result object.
 
   // Error?
-  if (!filemaker_is_error($node, $result)) {
+  if (!filemaker_is_error($result, $node)) {
 
     drupal_set_message(t('Record deleted from FileMaker.'));
     watchdog('filemaker', 'FileMaker record deleted', array(), WATCHDOG_INFO);
@@ -1508,7 +1509,7 @@ function filemaker_found_set($nid) {
 function filemaker_update_record($node, $fmid, &$form_state) {
 
   // Create FileMaker EditCommand object.
-  $fm = filemaker_filemaker_object($node->fmcid);
+  $fm = filemaker_object($node);
   $record = $fm->newEditCommand($node->layout, $fmid);
 
   // Loop through fields, setting each one in the FileMaker_EditCommand object.
@@ -1527,7 +1528,7 @@ function filemaker_update_record($node, $fmid, &$form_state) {
   $result = $record->execute();
 
   // Success or error message.
-  if (filemaker_is_error($node, $result)) {
+  if (filemaker_is_error($result, $node)) {
     return;
   }
 
@@ -1598,16 +1599,16 @@ function filemaker_get_portals($node, $fmid) {
  */
 function filemaker_get_portal($node, $portal_name, $fmid) {
 
-  $fm = filemaker_filemaker_object($node->fmcid); // FileMaker object.
+  $fm = filemaker_object($node); // FileMaker object.
 
   $layout = $fm->getLayout($node->layout); // FileMaker_Layout object.
-  if (filemaker_is_error($node, $layout)) return;
+  if (filemaker_is_error($layout, $node)) return;
 
   $portal = $layout->getRelatedSet($portal_name); // FileMaker_RelatedSet object.
-  if (filemaker_is_error($node, $portal)) return;
+  if (filemaker_is_error($portal, $node)) return;
 
   $fields = $portal->getFields(); // Array of FileMaker_Field objects.
-  if (filemaker_is_error($node, $fields)) return;
+  if (filemaker_is_error($fields, $node)) return;
 
   // Create table for portal.
   $head = array();
@@ -1620,11 +1621,11 @@ function filemaker_get_portal($node, $portal_name, $fmid) {
   }
 
   // Get FileMaker record.
-  $filemaker_record = $fm->getRecordById($node->layout, $fmid); // FileMaker_Record object.
-  if (filemaker_is_error($node, $filemaker_record)) return;
+  $record = $fm->getRecordById($node->layout, $fmid); // FileMaker_Record object.
+  if (filemaker_is_error($record, $node)) return;
 
   // Get portal data from FileMaker record.
-  $portal_records = $filemaker_record->getRelatedSet($portal_name); // Array of FileMaker_Record objects.
+  $portal_records = $record->getRelatedSet($portal_name); // Array of FileMaker_Record objects.
 
   // Not using filemaker_is_error() function because we don't want to use the drupal_set_message function
   // if there aren't any related records. Handles the error more elegantly by displaying 'No related records'.
@@ -1665,7 +1666,7 @@ function filemaker_get_portal($node, $portal_name, $fmid) {
  * @return
  *  Returns TRUE if the object is an error and FALSE if not.
  */
-function filemaker_is_error($node, $object) {
+function filemaker_is_error($object, $node = NULL) {
 
   // There is an error, handle it.
   if (FileMaker::isError($object)) {
@@ -1724,11 +1725,11 @@ function filemaker_field_for_form_array($node, $name, $label, $widget, $default_
   if ($widget == 'select' || $widget == 'radios' || $widget == 'checkboxes') {
 
     // Get value list items from FileMaker.
-    $fm = filemaker_filemaker_object($node->fmcid);  // FileMaker object.
+    $fm = filemaker_object($node);  // FileMaker object.
     $layout = $fm->getLayout($node->layout);  // FileMaker_Layout object.
-    if (filemaker_is_error($node, $layout)) return;
+    if (filemaker_is_error($layout, $node)) return;
     $value_list = $layout->getField($name)->getValueList(); // Array of value list items.
-    if (filemaker_is_error($node, $value_list)) return;
+    if (filemaker_is_error($value_list, $node)) return;
 
     // Place value list in $options array.
     // Use the value for the key and the value.
@@ -1814,7 +1815,7 @@ function filemaker_perform_find($node, $tab = NULL) {
 
   // Might need to load class definition from the API to avoid error when unserializing FileMaker_Command_Find object.
   // We do this by creating an empty FileMaker_Command_Find object.
-  $fm = filemaker_filemaker_object($node->fmcid); // FileMaker object
+  $fm = filemaker_object($node); // FileMaker object
   $request = $fm->newFindCommand($node->layout); // FileMaker_Command_Find object
 
   // Find out if we can safely unserialize FileMaker_Command_Find object.
@@ -1847,7 +1848,7 @@ function filemaker_perform_find($node, $tab = NULL) {
 
   // Perform the find.
   $result = $request->execute();
-  if (filemaker_is_error($node, $result)) return;
+  if (filemaker_is_error($result, $node)) return;
 
   // Store find request in session so that we can perform a new find to recreate the found set if record in it is edited or deleted.
   $_SESSION['filemaker'][$node->nid]['foundset']['request'] = serialize($request);
@@ -1900,7 +1901,9 @@ function filemaker_perform_find($node, $tab = NULL) {
  * @return
  *    A FileMaker object, authenticated using the connection in the {filemaker_connection} table.
  */
-function filemaker_filemaker_object($fmcid) {
+function filemaker_object($node = NULL, $fmcid = NULL) {
+
+  $fmcid = (empty($node)) ? $fmcid : $node->fmcid;
 
   // This is the single point of entry to the FileMaker API for PHP.
   filemaker_load_api();
