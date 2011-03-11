@@ -249,10 +249,10 @@ function filemaker_filemaker($op, $node) {
     $aids = _trigger_get_hook_aids('filemaker', $op);
 
     $context = array(
-        'hook' => 'filemaker',
-        'op' => $op,
-        'node' => $node,
-        );
+      'hook' => 'filemaker',
+      'op' => $op,
+      'node' => $node,
+    );
 
     actions_do(array_keys($aids), $node, $context);
   }
@@ -609,7 +609,7 @@ function filemaker_browse_tab($node, $tab = NULL, $fmid = NULL) {
   if ($fmid) {
 
     // Form to edit FileMaker record.
-    $output .= '<h2>Edit Chosen Record</h2>';
+    $output .= '<h2>' . t('Edit Chosen Record') . '</h2>';
     $output .= drupal_get_form('filemaker_record_form', $node, 'browse', $fmid);
 
     // Portals for this node.
@@ -934,7 +934,7 @@ function filemaker_browse_submit(&$form, &$form_state) {
 
 
 /**
- * Submit function for filemaker_create_form.
+ * Submit function for filemaker_record_form.
  *
  * Creates a single FileMaker record.
  */
@@ -1483,7 +1483,7 @@ function filemaker_found_set($nid) {
     $record_count = $_SESSION['filemaker'][$nid]['foundset']['record_count'];
     if ($foundset_count) {
       $x_of_n = $foundset_count . ' of ' . $record_count;
-      $output .= '<h2>Found Set</h2>';
+      $output .= '<h2>' . t('Found Set') . '</h2>';
       $output .= $x_of_n;
     }
 
@@ -1647,34 +1647,6 @@ function filemaker_get_portal($node, $portal_name, $fmid) {
   return theme_table($head, $rows);
 }
 
-
-
-
-
-
-/**
- * Cleans up field names of related fields for display.
- *
- * @param $field_name
- *  The name of a field, as a string, prefixed with the table occurance name. Formatted as 'table_name::field_name.'
- *
- * @return
- *  The name of the paramater field, propper case, underscores changed to spaces, and without the table prefix.
- */
-function filemaker_format_field_name($field_name) {
-
-  // Remove the table name.
-  $start_position = strpos($field_name, "::") + 2;
-  $field_name = drupal_substr($field_name, $start_position);
-
-  // Replace underscores with spaces.
-  $field_name = str_replace('_', ' ', $field_name);
-
-  // Uppercase first letter of each word.
-  $field_name = ucwords($field_name);
-
-  return $field_name;
-}
 
 
 
@@ -2139,6 +2111,45 @@ function filemaker_format_checkboxes_for_drupal(&$field) {
     else {
       $field['#default_value'] = explode("\n", $field['#default_value']);
     }
+}
+
+
+
+
+
+
+
+/*************************************************************
+ * Formats other data, this time just for displaying in Drupal
+ *************************************************************/
+
+
+
+
+
+
+/**
+ * Cleans up field names of related fields for display.
+ *
+ * @param $field_name
+ *  The name of a field, as a string, prefixed with the table occurance name. Formatted as 'table_name::field_name.'
+ *
+ * @return
+ *  The name of the paramater field, propper case, underscores changed to spaces, and without the table prefix.
+ */
+function filemaker_format_field_name($field_name) {
+
+  // Remove the table name.
+  $start_position = strpos($field_name, "::") + 2;
+  $field_name = drupal_substr($field_name, $start_position);
+
+  // Replace underscores with spaces.
+  $field_name = str_replace('_', ' ', $field_name);
+
+  // Uppercase first letter of each word.
+  $field_name = ucwords($field_name);
+
+  return $field_name;
 }
 
 

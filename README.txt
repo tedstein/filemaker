@@ -110,3 +110,11 @@ The only additional field on the node creation screen is a select field so you c
 Once the node is saved, visit the 'Layout Mode' tab on the node, choose which FileMaker layout the node will be based on, and add the fields and portals you want. 
 
 That's it. Now you can enter 'Find Mode' and search for records, 'Create Mode' to add records, or 'Browse Mode' to view and edit records.
+
+***********************************************************
+Debugging issues
+***********************************************************
+
+If you have installed the filemakerform module or another module named 'filemaker' be sure to _uninstall_ in addition disabling, before installing this module.
+
+Be sure your FileMaker server, not just your client, is set up to allow fmphp connections.
