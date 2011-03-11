@@ -54,8 +54,6 @@ function filemaker_admin_settings_connection_page($fmcid = NULL) {
   // Is there a connection to edit?
   if ($fmcid) {
 
-    drupal_set_message($fmcid);
-
     // Get FileMaker object.
     $fm = filemaker_object(NULL, $fmcid);
   
@@ -84,6 +82,23 @@ function filemaker_admin_settings_connection_page($fmcid = NULL) {
 
   return $output;
 }
+
+
+
+
+
+/**
+ * Deletes a single FileMaker connection.
+ */
+function filemaker_delete_connection($fmcid) {
+
+  // Delete record.
+  $sql = "DELETE FROM {filemaker_connection} WHERE fmcid = %d";
+  $result = db_query($sql, $fmcid);
+
+  drupal_set_message(t('FileMaker connection deleted.'));
+  watchdog('filemaker', 'FileMaker connection deleted', array(), WATCHDOG_INFO);
+}  
 
 
 

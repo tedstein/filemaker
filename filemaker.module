@@ -47,6 +47,17 @@ function filemaker_menu() {
     'file' => 'filemaker.admin.inc',
   );
 
+  // Admin settings, delete.
+  $items['admin/settings/filemaker/connection/%/delete'] = array(
+    'title' => 'Confirm deletion of FileMaker connection',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('filemaker_delete_form', 'connection', 4),
+    'access callback' => 'user_access',
+    'access arguments' => array('administer filemaker'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'filemaker.admin.inc',
+  );
+
   // FileMaker layout tab, attached to filemaker nodes.
   $items['node/%node/layout'] = array(
     'title' => 'Layout Mode',
@@ -75,7 +86,7 @@ function filemaker_menu() {
   $items['node/%node/layout/fields/%/delete'] = array(
     'title' => 'Confirm Deletion of FileMaker field.',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('filemaker_delete_form', 1, 'field', 4),
+    'page arguments' => array('filemaker_delete_form', 4, 'field', 1),
     'access callback' => 'filemaker_tab_access',
     'access arguments' => array('layout mode', 1),
     'type' => MENU_LOCAL_TASK,
@@ -97,7 +108,7 @@ function filemaker_menu() {
   $items['node/%node/layout/portals/%/delete'] = array(
     'title' => 'Confirm Deletion of FileMaker portal.',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('filemaker_delete_form', 1, 'portal', 4),
+    'page arguments' => array('filemaker_delete_form', 4, 'portal', 1),
     'access callback' => 'filemaker_tab_access',
     'access arguments' => array('layout mode', 1),
     'type' => MENU_LOCAL_TASK,
@@ -120,7 +131,7 @@ function filemaker_menu() {
   $items['node/%node/browse/%/delete'] = array(
     'title' => 'Confirm Deletion of FileMaker record.',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('filemaker_delete_form', 1, 'record', 3),
+    'page arguments' => array('filemaker_delete_form', 3, 'record', 1),
     'access callback' => 'filemaker_tab_access',
     'access arguments' => array('browse and find mode', 1),
     'type' => MENU_LOCAL_TASK,
@@ -679,7 +690,7 @@ function filemaker_fields_tab($node, $fmfid = NULL) {
  * @param $id
  *  The id of the thing that is being deleted: fmid, fmfid, or fmpid.
  */
-function filemaker_delete_form($form_state, $node, $what, $id) {
+function filemaker_delete_form($form_state, $what, $id, $node = NULL) {
 
   $form = array();
   $form['#submit'][] = 'filemaker_delete_form_submit';
@@ -706,13 +717,22 @@ function filemaker_delete_form($form_state, $node, $what, $id) {
       $submit_button = t('Delete Portal');
       $form['#redirect'][] = 'node/' . $node->nid . '/layout/portals';
       break;
+
+    case 'connection':
+
+      $confirm_text = t('Delete this FileMaker connection ');
+      $submit_button = t('Delete Connection');
+      $form['#redirect'][] = 'admin/settings/filemaker';
+      break;
   }
 
   // Store nid.
-  $form['filemaker']['nid'] = array(
-    '#type' => 'hidden',
-    '#value' => $node->nid,
-  );
+  if ($node) {
+    $form['filemaker']['nid'] = array(
+      '#type' => 'hidden',
+      '#value' => $node->nid,
+    );
+  }
 
   // Store id. Could be fmid, fmfid, or fmpid.
   $form['filemaker']['id'] = array(
@@ -770,6 +790,10 @@ function filemaker_delete_form_submit(&$form, &$form_state) {
 
       filemaker_delete_portal($form_state['values']['id']);
       break;
+
+    case 'Delete Connection':
+
+    filemaker_delete_connection($form_state['values']['id']);
   }
 }
 
@@ -1896,7 +1920,7 @@ function filemaker_perform_find($node, $tab = NULL) {
  * defining the same class multiple times.
  *
  * @param $fmcid
- *    The id of the FileMaker connection to use.
+ *    The id of the FileMaker connection to use. If a node is passed, we get $fmcid via $node->fmcid.
  *
  * @return
  *    A FileMaker object, authenticated using the connection in the {filemaker_connection} table.
